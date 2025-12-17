@@ -1,3 +1,4 @@
+mod bt;
 mod character;
 mod fsm;
 mod scene;

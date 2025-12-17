@@ -32,7 +32,7 @@ impl INode2D for Scene {
         }
     }
 
-    fn process(&mut self, delta: f32) {
+    fn process(&mut self, _delta: f32) {
         self.characters.retain(|c| c.is_instance_valid());
 
         for char in self.characters.iter_mut() {
