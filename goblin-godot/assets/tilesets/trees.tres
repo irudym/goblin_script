@@ -1,0 +1,15 @@
+[gd_resource type="TileSet" load_steps=3 format=3 uid="uid://cek1d25o8avl4"]
+
+[ext_resource type="Texture2D" uid="uid://dkwvq558am0eg" path="res://assets/tiles/Tree.png" id="1_quj2e"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ejbnb"]
+texture = ExtResource("1_quj2e")
+texture_region_size = Vector2i(32, 48)
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+3:0/0 = 0
+
+[resource]
+tile_size = Vector2i(32, 92)
+sources/0 = SubResource("TileSetAtlasSource_ejbnb")
