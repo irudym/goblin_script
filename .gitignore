@@ -1,3 +1,4 @@
 rust/target
 goblin-godot/.godot/
 goblin-godot/android/
+**/.DS_Store
