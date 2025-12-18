@@ -39,7 +39,7 @@ impl BTNode for FindTarget {
     }
 }
 
-use crate::fsm::{Direction, StateType};
+use crate::fsm::Direction;
 
 pub struct MoveToTarget {
     target_key: String,
@@ -74,13 +74,7 @@ impl BTNode for MoveToTarget {
         if distance < 1.0 {
             // the character has arrived
             // fix his position
-            godot_print!(">>MoveToTarget: snap_to_cell, position: {:?}", current_pos);
             character.snap_to_cell();
-            godot_print!(
-                ">>>>>>>>>>>>>: snap_to_cell, new position: {:?}",
-                character.base().get_position()
-            );
-            godot_print!(">>MoveToTarget: request IDLE");
             character.request_state(StateRequest::Idle);
             return NodeStatus::SUCCESS;
         }

@@ -107,10 +107,6 @@ impl Character {
      * Transition logic with validation
      */
     fn try_transition(&mut self, req: StateRequest) {
-        godot_print!(
-            "Character: try transition from {:?}",
-            self.state.as_ref().unwrap().get_type()
-        );
         let can_exit = self.state.as_ref().unwrap().can_exit();
 
         //1. Map request -> Target state type
@@ -121,19 +117,16 @@ impl Character {
             StateRequest::WalkTo(_) => StateType::RUN,
         };
 
-        godot_print!("Character: can_exit? : {}", can_exit);
         //2. validate transition rules
         if !can_exit {
             // the state is locked
             return;
         }
 
-        godot_print!("Character: can_transit?");
         // check if the transition is allowed by current state
         if !self.state.as_ref().unwrap().can_transition_to(target_type) {
             return;
         }
-        godot_print!("Character: can_transit? - YES");
 
         //3. execute transition
         let new_state: Box<dyn FSM> = match req {
