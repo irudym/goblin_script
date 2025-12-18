@@ -61,22 +61,31 @@ impl BTNode for MoveToTarget {
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
-        godot_print!("MoveToTarget:tick()");
-        //1. read from memory (blackboard)
+        //1. read from memory (blackboard) the target position
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
             _ => return NodeStatus::FAILURE, //no target set, or wrong value type
         };
 
-        //2. calculate direction logic
+        // check if the character has arrived to the to target pos
         let current_pos = character.base().get_position();
         let distance = current_pos.distance_to(target_pos);
 
         if distance < 1.0 {
             // the character has arrived
+            // fix his position
+            godot_print!(">>MoveToTarget: snap_to_cell, position: {:?}", current_pos);
+            character.snap_to_cell();
+            godot_print!(
+                ">>>>>>>>>>>>>: snap_to_cell, new position: {:?}",
+                character.base().get_position()
+            );
+            godot_print!(">>MoveToTarget: request IDLE");
+            character.request_state(StateRequest::Idle);
             return NodeStatus::SUCCESS;
         }
 
+        //2. calculate direction logic
         let direction_vector = (target_pos - current_pos).normalized();
 
         let new_direction = if direction_vector.x.abs() > direction_vector.y.abs() {
@@ -93,26 +102,15 @@ impl BTNode for MoveToTarget {
             }
         };
 
-        godot_print!(
-            "MoveToTarget:tick() => new_direction: {:?}, character: {:?}",
-            new_direction,
-            character.direction
-        );
-
         //3. update FSM state
         if character.direction != new_direction {
             //need to turn
-            godot_print!("MoveToTarget:tick() => request turn to {:?}", new_direction);
             character.request_state(StateRequest::Turn(new_direction));
         } else {
             //trugger run state
-            if character.is_idle() {
-                godot_print!(
-                    "MoveToTarget:tick() => request state walk to {:?}",
-                    target_pos
-                );
-                character.request_state(StateRequest::WalkTo(target_pos));
-            }
+            //if character.is_idle() {
+            character.request_state(StateRequest::Run);
+            //}
         }
 
         return NodeStatus::RUNNING;

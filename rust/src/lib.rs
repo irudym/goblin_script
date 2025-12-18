@@ -17,7 +17,7 @@ struct GroundMap {
 #[godot_api]
 impl ITileMapLayer for GroundMap {
     fn init(base: Base<TileMapLayer>) -> Self {
-        godot_print!("Hello, world!"); // Prints to the Godot console
+        godot_print!("godot-rust initialized!"); // Prints to the Godot console
 
         Self { base }
     }

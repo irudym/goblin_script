@@ -21,6 +21,18 @@ impl Display for Direction {
     }
 }
 
+impl Direction {
+    pub fn to_vector(&self) -> Vector2 {
+        use Direction::*;
+        match self {
+            Self::NORTH => Vector2 { x: 0.0, y: -1.0 },
+            Self::EAST => Vector2 { x: 1.0, y: 0.0 },
+            Self::SOUTH => Vector2 { x: 0.0, y: 1.0 },
+            Self::WEST => Vector2 { x: -1.0, y: 0.0 },
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum StateRequest {
     Idle,

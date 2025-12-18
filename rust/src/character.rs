@@ -17,6 +17,7 @@ use crate::fsm::{StateRequest, StateType};
 #[class(base=Area2D)]
 pub struct Character {
     pub direction: Direction,
+    pub speed: f32,
     state: Option<Box<dyn FSM>>, // the active state machine, accessible only by Main Thread
     brain: Option<BoxBTNode>,    // character AI
 
@@ -27,11 +28,11 @@ pub struct Character {
 }
 
 impl Character {
-    fn snap_to_cell(&mut self) {
+    pub fn snap_to_cell(&mut self) {
         // get cell i,j
         let position = self.base().get_position();
-        let i = f32::floor(position.x / 32.0) as i32;
-        let j = f32::floor(position.y / 32.0).floor() as i32;
+        let i = f32::round(position.x / 32.0) as i32;
+        let j = f32::round(position.y / 32.0) as i32;
 
         self.base_mut().set_position(Vector2 {
             x: (i * 32) as f32,
@@ -53,6 +54,7 @@ impl Character {
         sprite.play();
     }
 
+    // check if animation is still in process, keep out the switching to new animation
     pub fn is_playing(&self) -> bool {
         let sprite = self
             .base()
@@ -69,6 +71,7 @@ impl Character {
         sprite.play();
     }
 
+    // check if the character is in the idle state
     pub fn is_idle(&self) -> bool {
         self.state.as_ref().unwrap().get_type() == StateType::IDLE
     }
@@ -118,17 +121,19 @@ impl Character {
             StateRequest::WalkTo(_) => StateType::RUN,
         };
 
-        godot_print!("Can exit? {:?}", can_exit);
+        godot_print!("Character: can_exit? : {}", can_exit);
         //2. validate transition rules
         if !can_exit {
             // the state is locked
             return;
         }
 
+        godot_print!("Character: can_transit?");
         // check if the transition is allowed by current state
         if !self.state.as_ref().unwrap().can_transition_to(target_type) {
             return;
         }
+        godot_print!("Character: can_transit? - YES");
 
         //3. execute transition
         let new_state: Box<dyn FSM> = match req {
@@ -182,7 +187,7 @@ impl IArea2D for Character {
         let root = Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
                 Box::new(IsAtTarget::new("target_pos")),
-                Box::new(Wait::new(0.1)),
+                Box::new(Wait::new(0.8)),
                 Box::new(NextWaypoint::new(route, "target_pos")),
             ])),
             Box::new(MoveToTarget::new("target_pos")),
@@ -194,6 +199,7 @@ impl IArea2D for Character {
             blackboard: blackboard,
             direction: Direction::SOUTH,
             pending_request: Arc::new(Mutex::new(None)),
+            speed: 50.0,
             base,
         }
     }
