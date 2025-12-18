@@ -1,6 +1,7 @@
+use godot::prelude::*;
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Direction {
     NORTH,
     SOUTH,
@@ -18,6 +19,14 @@ impl Display for Direction {
             EAST => write!(f, "east"),
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum StateRequest {
+    Idle,
+    Run,
+    Turn(Direction),
+    WalkTo(Vector2),
 }
 
 #[derive(PartialEq, Debug)]
@@ -41,3 +50,4 @@ pub trait FSM {
 pub mod idle;
 pub mod run;
 pub mod turn;
+pub mod walk;

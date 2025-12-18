@@ -1,0 +1,55 @@
+use crate::character::Character;
+use crate::fsm::{FSM, StateRequest, StateType};
+use godot::builtin::math::ApproxEq;
+use godot::prelude::*;
+
+pub struct WalkState {
+    target: Vector2,
+    speed: f32,
+    can_exit: bool,
+}
+
+impl WalkState {
+    pub fn new(target: Vector2) -> Self {
+        Self {
+            target,
+            speed: 100.0,
+            can_exit: false,
+        }
+    }
+}
+
+impl FSM for WalkState {
+    fn get_type(&self) -> StateType {
+        StateType::RUN
+    }
+
+    fn can_transition_to(&self, state_type: StateType) -> bool {
+        state_type == StateType::IDLE
+    }
+
+    fn enter(&mut self, character: &mut Character) {
+        //check direction
+
+        character.play_animation_with_direction("run");
+    }
+
+    fn exit(&self, _character: &mut Character) {}
+
+    fn update(&mut self, delta: f32, character: &mut crate::character::Character) {
+        let current_pos = character.base().get_position();
+
+        //use Godot's move toward method
+        let new_pos = current_pos.move_toward(self.target, self.speed * delta);
+        character.base_mut().set_position(new_pos);
+
+        if new_pos.approx_eq(&self.target) {
+            self.can_exit = true;
+            character.request_state(StateRequest::Idle);
+        }
+    }
+
+    fn can_exit(&self) -> bool {
+        self.can_exit
+    }
+}

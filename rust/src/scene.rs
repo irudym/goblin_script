@@ -20,7 +20,7 @@ impl INode2D for Scene {
     }
 
     fn ready(&mut self) {
-        // get list of childrens
+        // get list of children
         let children = self.base().get_children();
         godot_print!("Children of the scene: {:?}", children);
         for node in children.iter_shared() {
@@ -35,9 +35,9 @@ impl INode2D for Scene {
     fn process(&mut self, _delta: f32) {
         self.characters.retain(|c| c.is_instance_valid());
 
-        for char in self.characters.iter_mut() {
-            //let mut character = char.bind_mut();
-            //character.update_state(delta);
-        }
+        //for char in self.characters.iter_mut() {
+        //let mut character = char.bind_mut();
+        //character.update_state(delta);
+        //}
     }
 }
