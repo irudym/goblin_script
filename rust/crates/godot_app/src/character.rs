@@ -3,15 +3,17 @@ use godot::prelude::*;
 
 use std::sync::{Arc, Mutex};
 
-use crate::bt::BoxBTNode;
 use crate::bt::blackboard::{Blackboard, BlackboardValue};
 use crate::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use crate::bt::nodes::{Selector, Sequence};
+use crate::bt::BoxBTNode;
 use crate::fsm::run::RunState;
 use crate::fsm::turn::TurnState;
 use crate::fsm::walk::WalkState;
-use crate::fsm::{Direction, FSM, idle::IdleState};
-use crate::fsm::{StateRequest, StateType};
+use crate::fsm::StateType;
+use crate::fsm::{idle::IdleState, Direction, FSM};
+
+use crate::character::request::StateRequest;
 
 #[derive(GodotClass)]
 #[class(base=Area2D)]
@@ -40,20 +42,6 @@ impl Character {
         });
     }
 
-    /*
-     * Set and play animation by construction animation name using Character direction:
-     * for example, animation is run, the direction is WEST, than animation name will be run_west
-     */
-    pub fn play_animation_with_direction(&mut self, animation_name: &str) {
-        let mut sprite = self
-            .base()
-            .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
-
-        let animation = format!("{}_{}", animation_name, self.direction);
-        sprite.set_animation(&animation);
-        sprite.play();
-    }
-
     // check if animation is still in process, keep out the switching to new animation
     pub fn is_playing(&self) -> bool {
         let sprite = self
@@ -74,76 +62,6 @@ impl Character {
     // check if the character is in the idle state
     pub fn is_idle(&self) -> bool {
         self.state.as_ref().unwrap().get_type() == StateType::IDLE
-    }
-
-    /*
-     * Thread-safe method to request a state change.
-     * Can be called from Input, Behaviour Tree, or other threads
-     */
-    pub fn request_state(&self, request: StateRequest) {
-        if let Ok(mut pending) = self.pending_request.lock() {
-            // "last wing strategy" - if multiple systems request a state in the same frame, the last one overrides
-            *pending = Some(request);
-        }
-    }
-
-    /*
-     * Internal method to process the queue
-     * This acts like a factory that converts enum to structs
-     */
-    fn handle_transitions(&mut self) {
-        //1. Check if there is a request
-        let request_opt = {
-            let mut lock = self.pending_request.lock().unwrap();
-            lock.take()
-        };
-
-        if let Some(req) = request_opt {
-            self.try_transition(req);
-        }
-    }
-
-    /*
-     * Transition logic with validation
-     */
-    fn try_transition(&mut self, req: StateRequest) {
-        let can_exit = self.state.as_ref().unwrap().can_exit();
-
-        //1. Map request -> Target state type
-        let target_type = match req {
-            StateRequest::Idle => StateType::IDLE,
-            StateRequest::Run => StateType::RUN,
-            StateRequest::Turn(_) => StateType::TURN,
-            StateRequest::WalkTo(_) => StateType::RUN,
-        };
-
-        //2. validate transition rules
-        if !can_exit {
-            // the state is locked
-            return;
-        }
-
-        // check if the transition is allowed by current state
-        if !self.state.as_ref().unwrap().can_transition_to(target_type) {
-            return;
-        }
-
-        //3. execute transition
-        let new_state: Box<dyn FSM> = match req {
-            StateRequest::Idle => Box::new(IdleState::new()),
-            StateRequest::Run => Box::new(RunState::new()),
-            StateRequest::Turn(direction) => Box::new(TurnState::new(direction)),
-            StateRequest::WalkTo(target) => Box::new(WalkState::new(target)),
-        };
-
-        // perform the swap
-        if let Some(old_state) = self.state.take() {
-            old_state.exit(self);
-
-            let mut next_state = new_state;
-            next_state.enter(self);
-            self.state = Some(next_state);
-        }
     }
 }
 

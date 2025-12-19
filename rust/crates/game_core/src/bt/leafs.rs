@@ -1,8 +1,9 @@
-use godot::prelude::*;
+use platform::{Animator, Logger};
 
-use crate::bt::{BTNode, NodeStatus, blackboard::Blackboard, blackboard::BlackboardValue};
-use crate::character::Character;
-use crate::fsm::StateRequest;
+use crate::bt::{blackboard::Blackboard, blackboard::BlackboardValue, BTNode, NodeStatus};
+use crate::character::request::StateRequest;
+use crate::math::{Direction, Vector2D};
+use crate::CharacterLogic;
 
 pub struct FindTarget {
     target_key: String, // "target_pos"
@@ -16,18 +17,18 @@ impl FindTarget {
     }
 }
 
-impl BTNode for FindTarget {
+impl<A: Animator, L: Logger> BTNode<A, L> for FindTarget {
     fn reset(&mut self) {}
     fn tick(
         &mut self,
-        _character: &mut Character,
+        _character: &mut CharacterLogic<A, L>,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
         //TODO: placeholder!
         //
         let player_found = true;
-        let player_position = Vector2::new(100.0, 200.0);
+        let player_position = Vector2D::new(100.0, 200.0);
 
         if player_found {
             // write to memory
@@ -38,8 +39,6 @@ impl BTNode for FindTarget {
         return NodeStatus::FAILURE;
     }
 }
-
-use crate::fsm::Direction;
 
 pub struct MoveToTarget {
     target_key: String,
@@ -53,14 +52,15 @@ impl MoveToTarget {
     }
 }
 
-impl BTNode for MoveToTarget {
+impl<A: Animator, L: Logger> BTNode<A, L> for MoveToTarget {
     fn reset(&mut self) {}
     fn tick(
         &mut self,
-        character: &mut Character,
+        character: &mut CharacterLogic<A, L>,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
+        println!("[-] Node: MoveToTarget");
         //1. read from memory (blackboard) the target position
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
@@ -68,10 +68,15 @@ impl BTNode for MoveToTarget {
         };
 
         // check if the character has arrived to the to target pos
-        let current_pos = character.base().get_position();
+        let current_pos = character.get_position();
         let distance = current_pos.distance_to(target_pos);
 
-        if distance < 1.0 {
+        println!(
+            "| ---> target_pos: {:?}, distance: {}",
+            target_pos, distance
+        );
+
+        if distance < 6.0 {
             // the character has arrived
             // fix his position
             character.snap_to_cell();
@@ -95,6 +100,10 @@ impl BTNode for MoveToTarget {
                 Direction::NORTH
             }
         };
+        println!(
+            "| ---> need to switch to new direction: {} from: {}",
+            new_direction, character.direction
+        );
 
         //3. update FSM state
         if character.direction != new_direction {
@@ -112,14 +121,14 @@ impl BTNode for MoveToTarget {
 }
 
 pub struct NextWaypoint {
-    waypoints: Vec<Vector2>,
+    waypoints: Vec<Vector2D>,
     current_index: usize,
     target_key: String,
     tile_size: f32,
 }
 
 impl NextWaypoint {
-    pub fn new(waypoints: Vec<Vector2>, key: &str) -> Self {
+    pub fn new(waypoints: Vec<Vector2D>, key: &str) -> Self {
         Self {
             waypoints,
             current_index: 0,
@@ -129,15 +138,16 @@ impl NextWaypoint {
     }
 }
 
-impl BTNode for NextWaypoint {
+impl<A: Animator, L: Logger> BTNode<A, L> for NextWaypoint {
     fn reset(&mut self) {}
 
     fn tick(
         &mut self,
-        _context: &mut Character,
+        _context: &mut CharacterLogic<A, L>,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
+        println!("[-] Node: NextWaypoint");
         if self.waypoints.is_empty() {
             return NodeStatus::FAILURE;
         }
@@ -160,26 +170,32 @@ impl IsAtTarget {
     pub fn new(key: &str) -> Self {
         Self {
             target_key: key.to_string(),
-            threshold: 1.0,
+            threshold: 6.0,
         }
     }
 }
 
-impl BTNode for IsAtTarget {
+impl<A: Animator, L: Logger> BTNode<A, L> for IsAtTarget {
     fn reset(&mut self) {}
 
     fn tick(
         &mut self,
-        context: &mut Character,
+        context: &mut CharacterLogic<A, L>,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
+        println!("[-] Node: IsAtTarget");
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
             _ => return NodeStatus::FAILURE,
         };
 
-        let dist = context.base().get_position().distance_to(target_pos);
+        let dist = context.get_position().distance_to(target_pos);
+
+        println!(
+            "| ---> target_pos: {:?}, dist: {}, threshold: {}",
+            target_pos, dist, self.threshold
+        );
 
         if dist <= self.threshold {
             NodeStatus::SUCCESS
@@ -201,13 +217,14 @@ impl WalkToTarget {
     }
 }
 
-impl BTNode for WalkToTarget {
+impl<A: Animator, L: Logger> BTNode<A, L> for WalkToTarget {
     fn tick(
         &mut self,
-        character: &mut Character,
+        character: &mut CharacterLogic<A, L>,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
+        println!("[-] Node: WalkToTarget");
         //1. read target
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
@@ -220,7 +237,7 @@ impl BTNode for WalkToTarget {
         // Idle and ready to move?
         // Walking, then character is busy
         if character.is_idle() {
-            let current_pos = character.base().get_position();
+            let current_pos = character.get_position();
 
             if current_pos.distance_to(target_pos) > 1.0 {
                 character.request_state(StateRequest::WalkTo(target_pos));
@@ -248,20 +265,20 @@ impl Wait {
     }
 }
 
-impl BTNode for Wait {
+impl<A: Animator, L: Logger> BTNode<A, L> for Wait {
     fn reset(&mut self) {
         self.current_time = 0.0;
     }
 
     fn tick(
         &mut self,
-        _context: &mut Character,
+        _context: &mut CharacterLogic<A, L>,
         _blackboard: &Blackboard,
         delta: f32,
     ) -> NodeStatus {
         self.current_time += delta;
         if self.current_time > self.delay {
-            self.reset();
+            <Wait as BTNode<A, L>>::reset(self);
             return NodeStatus::SUCCESS;
         }
         NodeStatus::RUNNING

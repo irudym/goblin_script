@@ -1,7 +1,6 @@
-use godot::global::godot_print;
-
-use super::{FSM, StateType};
-use crate::character::Character;
+use super::{StateType, FSM};
+use crate::CharacterLogic;
+use platform::{Animator, Logger};
 
 pub struct IdleState {
     allowed_transition: Vec<StateType>,
@@ -15,7 +14,7 @@ impl IdleState {
     }
 }
 
-impl FSM for IdleState {
+impl<A: Animator, L: Logger> FSM<A, L> for IdleState {
     fn get_type(&self) -> StateType {
         StateType::IDLE
     }
@@ -24,13 +23,13 @@ impl FSM for IdleState {
         self.allowed_transition.contains(&state_type)
     }
 
-    fn enter(&mut self, character: &mut Character) {
-        godot_print!("Enter to IDLE state");
+    fn enter(&mut self, character: &mut CharacterLogic<A, L>) {
+        //godot_print!("Enter to IDLE state");
         character.play_animation_with_direction("stand");
     }
 
-    fn exit(&self, _character: &mut Character) {}
-    fn update(&mut self, _delta: f32, _character: &mut Character) {}
+    fn exit(&self, _character: &mut CharacterLogic<A, L>) {}
+    fn update(&mut self, _delta: f32, _character: &mut CharacterLogic<A, L>) {}
 
     fn can_exit(&self) -> bool {
         return true;

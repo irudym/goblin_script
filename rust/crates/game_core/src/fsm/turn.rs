@@ -1,5 +1,7 @@
-use super::{Direction, FSM, StateType};
-use crate::character::Character;
+use super::{StateType, FSM};
+use crate::math::Direction;
+use crate::CharacterLogic;
+use platform::{Animator, Logger};
 
 pub struct TurnState {
     allowed_transition: Vec<StateType>,
@@ -17,7 +19,7 @@ impl TurnState {
     }
 }
 
-impl FSM for TurnState {
+impl<A: Animator, L: Logger> FSM<A, L> for TurnState {
     fn get_type(&self) -> StateType {
         StateType::TURN
     }
@@ -26,7 +28,7 @@ impl FSM for TurnState {
         self.allowed_transition.contains(&state_type)
     }
 
-    fn enter(&mut self, character: &mut Character) {
+    fn enter(&mut self, character: &mut CharacterLogic<A, L>) {
         if self.target == character.direction {
             self.can_exit = true;
         } else {
@@ -37,11 +39,11 @@ impl FSM for TurnState {
         }
     }
 
-    fn exit(&self, _character: &mut Character) {}
+    fn exit(&self, _character: &mut CharacterLogic<A, L>) {}
 
-    fn update(&mut self, _delta: f32, character: &mut Character) {
+    fn update(&mut self, _delta: f32, character: &mut CharacterLogic<A, L>) {
         // check if the turning animation is playing
-        if !character.is_playing() {
+        if !character.is_animation_playing() {
             self.can_exit = true;
         }
     }

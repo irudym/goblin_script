@@ -1,6 +1,3 @@
-mod bt;
-mod character;
-mod fsm;
 mod scene;
 
 use godot::classes::{ITileMapLayer, TileMapLayer};

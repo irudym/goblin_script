@@ -1,10 +1,8 @@
-[package]
-name = "goblin"
-version = "0.1.0"
-edition = "2024"
-
-[lib]
-crate-type = ["cdylib"]  # Compile this crate to a dynamic C library.
-
-[dependencies]
-godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
+[workspace]
+members = [
+ "crates/console_app",
+ "crates/game_core",
+ "crates/platform",
+ "crates/godot_app",
+]
+resolver = "2"

@@ -1,4 +1,4 @@
-use godot::prelude::*;
+use crate::math::Vector2D;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -8,7 +8,7 @@ pub enum BlackboardValue {
     Int(i32),
     Float(f32),
     String(String),
-    Vector(Vector2), //Godot Vector2
+    Vector(Vector2D), //Godot Vector2
 }
 
 #[derive(Clone, Default, Debug)]

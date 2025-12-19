@@ -1,7 +1,7 @@
 use godot::classes::{INode2D, Node2D};
 use godot::prelude::*;
 
-use crate::character::Character;
+use crate::character::character::Character;
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]

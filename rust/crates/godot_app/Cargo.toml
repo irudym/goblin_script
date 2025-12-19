@@ -1,0 +1,12 @@
+[package]
+name = "godot_app"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+game_core = { path = "../game_core" }
+platform  = { path = "../platform" }
+godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }

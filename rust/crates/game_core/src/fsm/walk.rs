@@ -1,16 +1,17 @@
-use crate::character::Character;
-use crate::fsm::{FSM, StateRequest, StateType};
-use godot::builtin::math::ApproxEq;
-use godot::prelude::*;
+use crate::character::request::StateRequest;
+use crate::fsm::{StateType, FSM};
+use crate::math::Vector2D;
+use crate::CharacterLogic;
+use platform::{Animator, Logger};
 
 pub struct WalkState {
-    target: Vector2,
+    target: Vector2D,
     speed: f32,
     can_exit: bool,
 }
 
 impl WalkState {
-    pub fn new(target: Vector2) -> Self {
+    pub fn new(target: Vector2D) -> Self {
         Self {
             target,
             speed: 100.0,
@@ -19,7 +20,7 @@ impl WalkState {
     }
 }
 
-impl FSM for WalkState {
+impl<A: Animator, L: Logger> FSM<A, L> for WalkState {
     fn get_type(&self) -> StateType {
         StateType::RUN
     }
@@ -28,20 +29,20 @@ impl FSM for WalkState {
         state_type == StateType::IDLE
     }
 
-    fn enter(&mut self, character: &mut Character) {
+    fn enter(&mut self, character: &mut CharacterLogic<A, L>) {
         //check direction
 
         character.play_animation_with_direction("run");
     }
 
-    fn exit(&self, _character: &mut Character) {}
+    fn exit(&self, _character: &mut CharacterLogic<A, L>) {}
 
-    fn update(&mut self, delta: f32, character: &mut crate::character::Character) {
-        let current_pos = character.base().get_position();
+    fn update(&mut self, delta: f32, character: &mut CharacterLogic<A, L>) {
+        let current_pos = character.get_position();
 
         //use Godot's move toward method
         let new_pos = current_pos.move_toward(self.target, self.speed * delta);
-        character.base_mut().set_position(new_pos);
+        character.set_position(new_pos);
 
         if new_pos.approx_eq(&self.target) {
             self.can_exit = true;
