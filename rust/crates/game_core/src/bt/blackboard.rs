@@ -1,4 +1,4 @@
-use crate::math::Vector2D;
+use platform::types::Vector2D;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 

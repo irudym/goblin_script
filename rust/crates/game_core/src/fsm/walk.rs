@@ -1,7 +1,7 @@
 use crate::character::request::StateRequest;
 use crate::fsm::{StateType, FSM};
-use crate::math::Vector2D;
 use crate::CharacterLogic;
+use platform::types::Vector2D;
 
 pub struct WalkState {
     target: Vector2D,

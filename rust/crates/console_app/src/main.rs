@@ -8,9 +8,9 @@ use game_core::bt::blackboard::BlackboardValue;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::{BTNode, Blackboard};
-use game_core::math::Vector2D;
 use game_core::CharacterLogic;
 use platform::logger::{LogType, Logger};
+use platform::types::Vector2D;
 
 fn main() {
     colog::basic_builder()

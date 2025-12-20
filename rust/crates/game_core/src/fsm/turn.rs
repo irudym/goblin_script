@@ -1,6 +1,6 @@
 use super::{StateType, FSM};
-use crate::math::Direction;
 use crate::CharacterLogic;
+use platform::types::Direction;
 
 pub struct TurnState {
     allowed_transition: Vec<StateType>,

@@ -1,4 +1,4 @@
-use crate::math::Vector2D;
+use crate::types::Vector2D;
 use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Debug)]

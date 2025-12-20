@@ -1,6 +1,7 @@
 use godot::classes::AnimatedSprite2D;
 use godot::prelude::*;
 use platform::animator::Animator;
+use platform::types::Vector2D;
 
 pub struct GodotAnimator {
     sprite: Gd<AnimatedSprite2D>,
@@ -22,13 +23,16 @@ impl Animator for GodotAnimator {
         self.sprite.is_playing()
     }
 
-    fn set_position(&mut self, x: f32, y: f32) {
-        self.sprite.set_position(Vector2 { x, y });
+    fn set_position(&mut self, position: Vector2D) {
+        self.sprite.set_position(Vector2 {
+            x: position.x,
+            y: position.y,
+        });
     }
 
-    fn get_position(&self) -> (f32, f32) {
+    fn get_position(&self) -> Vector2D {
         let pos = self.sprite.get_position();
-        (pos.x, pos.y)
+        Vector2D { x: pos.x, y: pos.y }
     }
 
     fn process(&mut self, _delta: f32) {}

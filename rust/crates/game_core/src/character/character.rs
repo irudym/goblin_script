@@ -3,10 +3,9 @@ use crate::bt::BoxBTNode;
 use crate::character::request::StateRequest;
 use crate::fsm::FSM;
 use crate::fsm::{IdleState, RunState, TurnState, WalkState};
-use crate::math::Direction;
-use crate::math::Vector2D;
 use crate::StateType;
 use platform::logger::LogType;
+use platform::types::{Direction, Vector2D};
 use platform::{Animator, Logger};
 use std::sync::{Arc, Mutex};
 
@@ -53,12 +52,11 @@ impl CharacterLogic {
     }
 
     pub fn get_position(&self) -> Vector2D {
-        let pos = self.animator.get_position();
-        Vector2D { x: pos.0, y: pos.1 }
+        self.animator.get_position()
     }
 
     pub fn set_position(&mut self, position: Vector2D) {
-        self.animator.set_position(position.x, position.y);
+        self.animator.set_position(position);
     }
 
     // check if the character is in the idle state

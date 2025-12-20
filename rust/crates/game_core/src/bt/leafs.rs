@@ -1,7 +1,7 @@
 use crate::bt::{blackboard::Blackboard, blackboard::BlackboardValue, BTNode, NodeStatus};
 use crate::character::request::StateRequest;
-use crate::math::{Direction, Vector2D};
 use crate::CharacterLogic;
+use platform::types::{Direction, Vector2D};
 
 pub struct FindTarget {
     target_key: String, // "target_pos"

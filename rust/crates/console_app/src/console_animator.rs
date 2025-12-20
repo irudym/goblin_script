@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::console_logger::ConsoleLogger;
 
-use game_core::Vector2D;
+use platform::types::Vector2D;
 use platform::{
     animator::Animator,
     logger::{LogType, Logger},
@@ -83,12 +83,11 @@ impl Animator for ConsoleAnimator {
         }
     }
 
-    fn set_position(&mut self, x: f32, y: f32) {
-        self.position.x = x;
-        self.position.y = y;
+    fn set_position(&mut self, position: Vector2D) {
+        self.position = position;
     }
 
-    fn get_position(&self) -> (f32, f32) {
-        (self.position.x, self.position.y)
+    fn get_position(&self) -> Vector2D {
+        self.position
     }
 }
