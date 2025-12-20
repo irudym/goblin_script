@@ -8,7 +8,6 @@ pub mod nodes;
 pub use blackboard::Blackboard;
 
 use crate::CharacterLogic;
-use platform::{Animator, Logger};
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum NodeStatus {
@@ -17,14 +16,14 @@ pub enum NodeStatus {
     FAILURE,
 }
 
-pub trait BTNode<A: Animator, L: Logger>: Send + Sync {
+pub trait BTNode: Send + Sync {
     fn reset(&mut self);
     fn tick(
         &mut self,
-        context: &mut CharacterLogic<A, L>,
+        context: &mut CharacterLogic,
         blackboard: &Blackboard,
         delta: f32,
     ) -> NodeStatus;
 }
 
-pub type BoxBTNode<A, L> = Box<dyn BTNode<A, L>>;
+pub type BoxBTNode = Box<dyn BTNode>;

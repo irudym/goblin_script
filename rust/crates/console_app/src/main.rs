@@ -23,7 +23,7 @@ fn main() {
 
     let animator = ConsoleAnimator::new();
 
-    let mut character = CharacterLogic::new(animator, logger);
+    let mut character = CharacterLogic::new(Box::new(animator), Box::new(logger));
 
     // test patrol
     let route = vec![
@@ -57,7 +57,7 @@ fn main() {
     //   2. WalkToTarget (Keep moving to current target)
 
     let mut root = Box::new(Selector::new(vec![
-        Box::new(Sequence::<ConsoleAnimator, ConsoleLogger>::new(vec![
+        Box::new(Sequence::new(vec![
             Box::new(IsAtTarget::new("target_pos")),
             Box::new(Wait::new(0.8)),
             Box::new(NextWaypoint::new(route, "target_pos")),

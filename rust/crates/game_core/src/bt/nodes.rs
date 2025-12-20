@@ -1,25 +1,24 @@
 use crate::bt::Blackboard;
 use crate::bt::{BoxBTNode, NodeStatus};
 use crate::CharacterLogic;
-use platform::{Animator, Logger};
 
 use super::BTNode;
 
 /*
  * / Sequence Node - all children must succeed
  */
-pub struct Sequence<A: Animator, L: Logger> {
+pub struct Sequence {
     index: usize,
-    children: Vec<BoxBTNode<A, L>>,
+    children: Vec<BoxBTNode>,
 }
 
-impl<A: Animator, L: Logger> Sequence<A, L> {
-    pub fn new(children: Vec<BoxBTNode<A, L>>) -> Self {
+impl Sequence {
+    pub fn new(children: Vec<BoxBTNode>) -> Self {
         Self { index: 0, children }
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for Sequence<A, L> {
+impl BTNode for Sequence {
     fn reset(&mut self) {
         self.index = 0;
         for child in &mut self.children {
@@ -29,7 +28,7 @@ impl<A: Animator, L: Logger> BTNode<A, L> for Sequence<A, L> {
 
     fn tick(
         &mut self,
-        context: &mut CharacterLogic<A, L>,
+        context: &mut CharacterLogic,
         blackboard: &Blackboard,
         delta: f32,
     ) -> NodeStatus {
@@ -61,21 +60,21 @@ Runs children in order. Succeeds if one succeeds. Fails only if all fail.
 This is your "Fallback" logic (e.g., "Try to Attack; if can't, Patrol").
 */
 
-pub struct Selector<A: Animator, L: Logger> {
-    children: Vec<BoxBTNode<A, L>>,
+pub struct Selector {
+    children: Vec<BoxBTNode>,
     index: usize,
 }
 
-impl<A: Animator, L: Logger> Selector<A, L> {
-    pub fn new(children: Vec<BoxBTNode<A, L>>) -> Self {
+impl Selector {
+    pub fn new(children: Vec<BoxBTNode>) -> Self {
         Self { children, index: 0 }
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for Selector<A, L> {
+impl BTNode for Selector {
     fn tick(
         &mut self,
-        context: &mut CharacterLogic<A, L>,
+        context: &mut CharacterLogic,
         blackboard: &Blackboard,
         delta: f32,
     ) -> NodeStatus {

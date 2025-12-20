@@ -1,3 +1,6 @@
+mod character;
+mod godot_animator;
+mod godot_logger;
 mod scene;
 
 use godot::classes::{ITileMapLayer, TileMapLayer};

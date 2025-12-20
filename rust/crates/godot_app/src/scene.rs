@@ -1,25 +1,20 @@
 use godot::classes::{INode2D, Node2D};
 use godot::prelude::*;
 
-use crate::character::character::Character;
-
 #[derive(GodotClass)]
 #[class(base=Node2D)]
 struct Scene {
     base: Base<Node2D>,
-    characters: Vec<Gd<Character>>,
 }
 
 #[godot_api]
 impl INode2D for Scene {
     fn init(base: Base<Node2D>) -> Self {
-        Self {
-            characters: Vec::new(),
-            base,
-        }
+        Self { base }
     }
 
     fn ready(&mut self) {
+        /*
         // get list of children
         let children = self.base().get_children();
         godot_print!("Children of the scene: {:?}", children);
@@ -30,10 +25,11 @@ impl INode2D for Scene {
                 self.characters.push(character);
             }
         }
+        */
     }
 
     fn process(&mut self, _delta: f32) {
-        self.characters.retain(|c| c.is_instance_valid());
+        //self.characters.retain(|c| c.is_instance_valid());
 
         //for char in self.characters.iter_mut() {
         //let mut character = char.bind_mut();

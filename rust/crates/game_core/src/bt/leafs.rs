@@ -1,5 +1,3 @@
-use platform::{Animator, Logger};
-
 use crate::bt::{blackboard::Blackboard, blackboard::BlackboardValue, BTNode, NodeStatus};
 use crate::character::request::StateRequest;
 use crate::math::{Direction, Vector2D};
@@ -17,11 +15,11 @@ impl FindTarget {
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for FindTarget {
+impl BTNode for FindTarget {
     fn reset(&mut self) {}
     fn tick(
         &mut self,
-        _character: &mut CharacterLogic<A, L>,
+        _character: &mut CharacterLogic,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
@@ -52,11 +50,11 @@ impl MoveToTarget {
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for MoveToTarget {
+impl BTNode for MoveToTarget {
     fn reset(&mut self) {}
     fn tick(
         &mut self,
-        character: &mut CharacterLogic<A, L>,
+        character: &mut CharacterLogic,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
@@ -138,12 +136,12 @@ impl NextWaypoint {
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for NextWaypoint {
+impl BTNode for NextWaypoint {
     fn reset(&mut self) {}
 
     fn tick(
         &mut self,
-        _context: &mut CharacterLogic<A, L>,
+        _context: &mut CharacterLogic,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
@@ -175,12 +173,12 @@ impl IsAtTarget {
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for IsAtTarget {
+impl BTNode for IsAtTarget {
     fn reset(&mut self) {}
 
     fn tick(
         &mut self,
-        context: &mut CharacterLogic<A, L>,
+        context: &mut CharacterLogic,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
@@ -217,10 +215,10 @@ impl WalkToTarget {
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for WalkToTarget {
+impl BTNode for WalkToTarget {
     fn tick(
         &mut self,
-        character: &mut CharacterLogic<A, L>,
+        character: &mut CharacterLogic,
         blackboard: &Blackboard,
         _delta: f32,
     ) -> NodeStatus {
@@ -265,20 +263,20 @@ impl Wait {
     }
 }
 
-impl<A: Animator, L: Logger> BTNode<A, L> for Wait {
+impl BTNode for Wait {
     fn reset(&mut self) {
         self.current_time = 0.0;
     }
 
     fn tick(
         &mut self,
-        _context: &mut CharacterLogic<A, L>,
+        _context: &mut CharacterLogic,
         _blackboard: &Blackboard,
         delta: f32,
     ) -> NodeStatus {
         self.current_time += delta;
         if self.current_time > self.delay {
-            <Wait as BTNode<A, L>>::reset(self);
+            <Wait as BTNode>::reset(self);
             return NodeStatus::SUCCESS;
         }
         NodeStatus::RUNNING

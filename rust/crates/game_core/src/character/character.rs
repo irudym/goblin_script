@@ -10,22 +10,22 @@ use platform::logger::LogType;
 use platform::{Animator, Logger};
 use std::sync::{Arc, Mutex};
 
-pub struct CharacterLogic<A: Animator, L: Logger> {
+pub struct CharacterLogic {
     pub direction: Direction,
     pub speed: f32,
-    state: Option<Box<dyn FSM<A, L>>>, // the active state machine, accessible only by Main Thread
-    pub brain: Option<BoxBTNode<A, L>>, // character AI
+    state: Option<Box<dyn FSM>>, // the active state machine, accessible only by Main Thread
+    pub brain: Option<BoxBTNode>, // character AI
 
     pub blackboard: Blackboard,
     pending_request: Arc<Mutex<Option<StateRequest>>>, // the request buffer, thread safe
 
-    animator: A,
-    logger: L,
+    animator: Box<dyn Animator>,
+    logger: Box<dyn Logger>,
     position: Vector2D,
 }
 
-impl<A: Animator, L: Logger> CharacterLogic<A, L> {
-    pub fn new(animator: A, logger: L) -> Self {
+impl CharacterLogic {
+    pub fn new(animator: Box<dyn Animator>, logger: Box<dyn Logger>) -> Self {
         logger.log(LogType::info, "Create struct CharacterLogic");
         Self {
             direction: Direction::SOUTH,
@@ -53,11 +53,12 @@ impl<A: Animator, L: Logger> CharacterLogic<A, L> {
     }
 
     pub fn get_position(&self) -> Vector2D {
-        self.position
+        let pos = self.animator.get_position();
+        Vector2D { x: pos.0, y: pos.1 }
     }
 
     pub fn set_position(&mut self, position: Vector2D) {
-        self.position = position;
+        self.animator.set_position(position.x, position.y);
     }
 
     // check if the character is in the idle state
@@ -154,7 +155,7 @@ impl<A: Animator, L: Logger> CharacterLogic<A, L> {
             return;
         }
 
-        let new_state: Box<dyn FSM<A, L>> = match req {
+        let new_state: Box<dyn FSM> = match req {
             StateRequest::Idle => Box::new(IdleState::new()),
             StateRequest::Run => Box::new(RunState::new()),
             StateRequest::Turn(direction) => Box::new(TurnState::new(direction)),

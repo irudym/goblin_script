@@ -1,6 +1,5 @@
 use super::{StateType, FSM};
 use crate::CharacterLogic;
-use platform::{Animator, Logger};
 
 pub struct RunState {
     // target: Vector2,
@@ -16,7 +15,7 @@ impl RunState {
     }
 }
 
-impl<A: Animator, L: Logger> FSM<A, L> for RunState {
+impl FSM for RunState {
     fn get_type(&self) -> StateType {
         StateType::RUN
     }
@@ -25,11 +24,11 @@ impl<A: Animator, L: Logger> FSM<A, L> for RunState {
         self.allowed_transition.contains(&state_type)
     }
 
-    fn enter(&mut self, character: &mut CharacterLogic<A, L>) {
+    fn enter(&mut self, character: &mut CharacterLogic) {
         character.play_animation_with_direction("run");
     }
-    fn exit(&self, _character: &mut CharacterLogic<A, L>) {}
-    fn update(&mut self, delta: f32, character: &mut CharacterLogic<A, L>) {
+    fn exit(&self, _character: &mut CharacterLogic) {}
+    fn update(&mut self, delta: f32, character: &mut CharacterLogic) {
         // move to the direction
         let current_pos = character.get_position();
 

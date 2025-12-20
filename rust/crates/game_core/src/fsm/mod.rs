@@ -1,5 +1,4 @@
 use crate::CharacterLogic;
-use platform::{Animator, Logger};
 
 #[derive(PartialEq, Debug)]
 pub enum StateType {
@@ -8,13 +7,13 @@ pub enum StateType {
     IDLE,
 }
 
-pub trait FSM<A: Animator, L: Logger> {
+pub trait FSM {
     fn get_type(&self) -> StateType; // return state type
     fn can_transition_to(&self, state_type: StateType) -> bool;
 
-    fn enter(&mut self, character: &mut CharacterLogic<A, L>);
-    fn exit(&self, character: &mut CharacterLogic<A, L>);
-    fn update(&mut self, delta: f32, character: &mut CharacterLogic<A, L>);
+    fn enter(&mut self, character: &mut CharacterLogic);
+    fn exit(&self, character: &mut CharacterLogic);
+    fn update(&mut self, delta: f32, character: &mut CharacterLogic);
 
     fn can_exit(&self) -> bool;
 }

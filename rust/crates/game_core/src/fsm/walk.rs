@@ -2,7 +2,6 @@ use crate::character::request::StateRequest;
 use crate::fsm::{StateType, FSM};
 use crate::math::Vector2D;
 use crate::CharacterLogic;
-use platform::{Animator, Logger};
 
 pub struct WalkState {
     target: Vector2D,
@@ -20,7 +19,7 @@ impl WalkState {
     }
 }
 
-impl<A: Animator, L: Logger> FSM<A, L> for WalkState {
+impl FSM for WalkState {
     fn get_type(&self) -> StateType {
         StateType::RUN
     }
@@ -29,15 +28,15 @@ impl<A: Animator, L: Logger> FSM<A, L> for WalkState {
         state_type == StateType::IDLE
     }
 
-    fn enter(&mut self, character: &mut CharacterLogic<A, L>) {
+    fn enter(&mut self, character: &mut CharacterLogic) {
         //check direction
 
         character.play_animation_with_direction("run");
     }
 
-    fn exit(&self, _character: &mut CharacterLogic<A, L>) {}
+    fn exit(&self, _character: &mut CharacterLogic) {}
 
-    fn update(&mut self, delta: f32, character: &mut CharacterLogic<A, L>) {
+    fn update(&mut self, delta: f32, character: &mut CharacterLogic) {
         let current_pos = character.get_position();
 
         //use Godot's move toward method

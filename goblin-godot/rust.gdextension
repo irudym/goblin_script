@@ -4,13 +4,13 @@ compatibility_minimum = 4.3
 reloadable = true
 
 [libraries]
-linux.debug.x86_64 = "res://../rust/target/debug/libgoblin.so"
-linux.release.x86_64 = "res://../rust/target/release/libgoblin.so"
-windows.debug.x86_64 = "res://../rust/target/debug/goblin.dll"
-windows.release.x86_64 = "res://../rust/target/release/goblin.dll"
-macos.debug = "res://../rust/target/debug/libgoblin.dylib"
-macos.release = "res://../rust/target/release/libgoblin.dylib"
-macos.debug.arm64 = "res://../rust/target/debug/libgoblin.dylib"
-macos.release.arm64 = "res://../rust/target/release/libgoblin.dylib"
-web.debug.wasm32 = "res://../rust/target/wasm32-unknown-emscripten/debug/goblin.wasm"
-web.release.wasm32 = "res://../rust/target/wasm32-unknown-emscripten/release/goblin.wasm"
+linux.debug.x86_64 = "res://../rust/target/debug/libgodot_app.so"
+linux.release.x86_64 = "res://../rust/target/release/libgodot_app.so"
+windows.debug.x86_64 = "res://../rust/target/debug/godot_app.dll"
+windows.release.x86_64 = "res://../rust/target/release/godot_app.dll"
+macos.debug = "res://../rust/target/debug/libgodot_app.dylib"
+macos.release = "res://../rust/target/release/libgodot_app.dylib"
+macos.debug.arm64 = "res://../rust/target/debug/libgodot_app.dylib"
+macos.release.arm64 = "res://../rust/target/release/libgodot_app.dylib"
+web.debug.wasm32 = "res://../rust/target/wasm32-unknown-emscripten/debug/godot_app.wasm"
+web.release.wasm32 = "res://../rust/target/wasm32-unknown-emscripten/release/godot_app.wasm"

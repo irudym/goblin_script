@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::console_logger::ConsoleLogger;
 
+use game_core::Vector2D;
 use platform::{
     animator::Animator,
     logger::{LogType, Logger},
@@ -12,6 +13,7 @@ pub struct ConsoleAnimator {
     frames: HashMap<&'static str, (usize, bool)>, // animation name and (amount of frames, loop)
     current_animation: String,
     current_frame: usize,
+    position: Vector2D,
 }
 
 impl ConsoleAnimator {
@@ -34,6 +36,7 @@ impl ConsoleAnimator {
             frames,
             current_animation: "".to_string(),
             current_frame: 0,
+            position: Vector2D::new(0.0, 0.0),
         }
     }
 }
@@ -78,5 +81,14 @@ impl Animator for ConsoleAnimator {
                 }
             }
         }
+    }
+
+    fn set_position(&mut self, x: f32, y: f32) {
+        self.position.x = x;
+        self.position.y = y;
+    }
+
+    fn get_position(&self) -> (f32, f32) {
+        (self.position.x, self.position.y)
     }
 }
