@@ -3,6 +3,7 @@
  */
 #![forbid(unsafe_code)]
 
+pub mod ai;
 pub mod bt;
 pub mod character;
 pub mod fsm;

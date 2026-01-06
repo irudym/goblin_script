@@ -7,7 +7,10 @@ pub mod nodes;
 
 pub use blackboard::Blackboard;
 
-use crate::CharacterLogic;
+use crate::{
+    character::{command::CharacterCommand, snapshot::CharacterSnapshot},
+    CharacterLogic,
+};
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum NodeStatus {
@@ -16,13 +19,17 @@ pub enum NodeStatus {
     FAILURE,
 }
 
+/*
+ * Thread-Safe Behaviour Node
+ */
 pub trait BTNode: Send + Sync {
     fn reset(&mut self);
     fn tick(
         &mut self,
-        context: &mut CharacterLogic,
+        snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         delta: f32,
+        out_commands: &mut Vec<CharacterCommand>,
     ) -> NodeStatus;
 }
 

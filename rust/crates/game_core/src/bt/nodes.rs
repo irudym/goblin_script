@@ -1,5 +1,7 @@
 use crate::bt::Blackboard;
 use crate::bt::{BoxBTNode, NodeStatus};
+use crate::character::command::CharacterCommand;
+use crate::character::snapshot::CharacterSnapshot;
 use crate::CharacterLogic;
 
 use super::BTNode;
@@ -28,12 +30,13 @@ impl BTNode for Sequence {
 
     fn tick(
         &mut self,
-        context: &mut CharacterLogic,
+        snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         delta: f32,
+        out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
         while self.index < self.children.len() {
-            let status = self.children[self.index].tick(context, blackboard, delta);
+            let status = self.children[self.index].tick(snapshot, blackboard, delta, out);
 
             match status {
                 NodeStatus::RUNNING => {
@@ -74,12 +77,13 @@ impl Selector {
 impl BTNode for Selector {
     fn tick(
         &mut self,
-        context: &mut CharacterLogic,
+        snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         delta: f32,
+        out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
         while self.index < self.children.len() {
-            let status = self.children[self.index].tick(context, blackboard, delta);
+            let status = self.children[self.index].tick(snapshot, blackboard, delta, out);
 
             match status {
                 NodeStatus::RUNNING => {

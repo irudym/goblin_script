@@ -1,6 +1,7 @@
 use crate::bt::{blackboard::Blackboard, blackboard::BlackboardValue, BTNode, NodeStatus};
+use crate::character::command::CharacterCommand;
 use crate::character::request::StateRequest;
-use crate::CharacterLogic;
+use crate::character::snapshot::CharacterSnapshot;
 use platform::types::{Direction, Vector2D};
 
 pub struct FindTarget {
@@ -19,9 +20,10 @@ impl BTNode for FindTarget {
     fn reset(&mut self) {}
     fn tick(
         &mut self,
-        _character: &mut CharacterLogic,
+        snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         _delta: f32,
+        out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
         //TODO: placeholder!
         //
@@ -54,9 +56,10 @@ impl BTNode for MoveToTarget {
     fn reset(&mut self) {}
     fn tick(
         &mut self,
-        character: &mut CharacterLogic,
+        snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         _delta: f32,
+        out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
         println!("[-] Node: MoveToTarget");
         //1. read from memory (blackboard) the target position
@@ -66,7 +69,7 @@ impl BTNode for MoveToTarget {
         };
 
         // check if the character has arrived to the to target pos
-        let current_pos = character.get_position();
+        let current_pos = snapshot.position;
         let distance = current_pos.distance_to(target_pos);
 
         println!(
@@ -77,8 +80,9 @@ impl BTNode for MoveToTarget {
         if distance < 6.0 {
             // the character has arrived
             // fix his position
-            character.snap_to_cell();
-            character.request_state(StateRequest::Idle);
+            //character.snap_to_cell();
+            //character.request_state(StateRequest::Idle);
+            out.push(CharacterCommand::ChangeState(StateRequest::Idle));
             return NodeStatus::SUCCESS;
         }
 
@@ -100,17 +104,21 @@ impl BTNode for MoveToTarget {
         };
         println!(
             "| ---> need to switch to new direction: {} from: {}",
-            new_direction, character.direction
+            new_direction, snapshot.direction
         );
 
         //3. update FSM state
-        if character.direction != new_direction {
+        if snapshot.direction != new_direction {
             //need to turn
-            character.request_state(StateRequest::Turn(new_direction));
+            //character.request_state(StateRequest::Turn(new_direction));
+            out.push(CharacterCommand::ChangeState(StateRequest::Turn(
+                new_direction,
+            )))
         } else {
             //trugger run state
             //if character.is_idle() {
-            character.request_state(StateRequest::Run);
+            //character.request_state(StateRequest::Run);
+            out.push(CharacterCommand::ChangeState(StateRequest::Run))
             //}
         }
 
@@ -141,9 +149,10 @@ impl BTNode for NextWaypoint {
 
     fn tick(
         &mut self,
-        _context: &mut CharacterLogic,
+        _snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         _delta: f32,
+        _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
         println!("[-] Node: NextWaypoint");
         if self.waypoints.is_empty() {
@@ -178,22 +187,17 @@ impl BTNode for IsAtTarget {
 
     fn tick(
         &mut self,
-        context: &mut CharacterLogic,
+        snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         _delta: f32,
+        _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
-        println!("[-] Node: IsAtTarget");
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
             _ => return NodeStatus::FAILURE,
         };
 
-        let dist = context.get_position().distance_to(target_pos);
-
-        println!(
-            "| ---> target_pos: {:?}, dist: {}, threshold: {}",
-            target_pos, dist, self.threshold
-        );
+        let dist = snapshot.position.distance_to(target_pos);
 
         if dist <= self.threshold {
             NodeStatus::SUCCESS
@@ -218,11 +222,11 @@ impl WalkToTarget {
 impl BTNode for WalkToTarget {
     fn tick(
         &mut self,
-        character: &mut CharacterLogic,
+        snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         _delta: f32,
+        out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
-        println!("[-] Node: WalkToTarget");
         //1. read target
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
@@ -234,11 +238,14 @@ impl BTNode for WalkToTarget {
         //2. check FSM state:
         // Idle and ready to move?
         // Walking, then character is busy
-        if character.is_idle() {
-            let current_pos = character.get_position();
+        if snapshot.is_idle {
+            let current_pos = snapshot.position;
 
             if current_pos.distance_to(target_pos) > 1.0 {
-                character.request_state(StateRequest::WalkTo(target_pos));
+                //character.request_state(StateRequest::WalkTo(target_pos));
+                out.push(CharacterCommand::ChangeState(StateRequest::WalkTo(
+                    target_pos,
+                )));
             } else {
                 return NodeStatus::SUCCESS;
             }
@@ -270,9 +277,10 @@ impl BTNode for Wait {
 
     fn tick(
         &mut self,
-        _context: &mut CharacterLogic,
+        _snapshot: &CharacterSnapshot,
         _blackboard: &Blackboard,
         delta: f32,
+        _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
         self.current_time += delta;
         if self.current_time > self.delay {

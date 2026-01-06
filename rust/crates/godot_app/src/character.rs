@@ -6,8 +6,12 @@ use crate::godot_logger::GodotLogger;
 use game_core::bt::blackboard::BlackboardValue;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
-use game_core::CharacterLogic;
+use game_core::{BoxBTNode, CharacterLogic};
 use platform::types::Vector2D;
+
+use game_core::ai::worker::bt_worker;
+use std::sync::mpsc;
+use std::thread;
 
 #[derive(GodotClass)]
 #[class(base=Area2D)]
@@ -18,6 +22,41 @@ pub struct Character {
 
 impl Character {
     // check if animation is still in process, keep out the switching to new animation
+    fn build_tree(&self) -> BoxBTNode {
+        // test patrol
+        // Tree structure:
+        // Sequence
+        //  1. Patrol Logic (update target, return Success when arrived)
+        //  2. Wait (pause)
+        //  3. WalkToTarget
+
+        // Actually, a better structure for continuous movement is:
+        // Selector
+        //   1. Sequence (Target Reached?)
+        //       a. Patrol (Calculate next point if arrived)
+        //       b. Wait (Visualize looking around)
+        //   2. WalkToTarget (Keep moving to current target)
+        let route = vec![
+            Vector2D::new(0.0, 0.0),
+            Vector2D::new(5.0, 0.0), // Move 5 tiles East
+            Vector2D::new(5.0, 5.0), // Move 5 tiles South
+            Vector2D::new(0.0, 5.0), // Return home
+        ];
+
+        let first_point = Vector2D {
+            x: route[0].x * 32.0,
+            y: route[0].y * 32.0,
+        };
+
+        Box::new(Selector::new(vec![
+            Box::new(Sequence::new(vec![
+                Box::new(IsAtTarget::new("target_pos")),
+                Box::new(Wait::new(0.8)),
+                Box::new(NextWaypoint::new(route, "target_pos")),
+            ])),
+            Box::new(MoveToTarget::new("target_pos")),
+        ]))
+    }
 }
 
 #[godot_api]
@@ -36,51 +75,30 @@ impl IArea2D for Character {
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
         let animator = Box::new(GodotAnimator::new(sprite));
         let logger = Box::new(GodotLogger::new());
-        let mut logic = CharacterLogic::new(animator, logger);
 
-        // test patrol
-        let route = vec![
-            Vector2D::new(0.0, 0.0),
-            Vector2D::new(5.0, 0.0), // Move 5 tiles East
-            Vector2D::new(5.0, 5.0), // Move 5 tiles South
-            Vector2D::new(0.0, 5.0), // Return home
-        ];
+        // create channels
+        let (snapshot_tx, snapshot_rx) = mpsc::channel();
+        let (command_tx, command_rx) = mpsc::channel();
 
-        let first_point = Vector2D {
-            x: route[0].x * 32.0,
-            y: route[0].y * 32.0,
-        };
-        logic
-            .blackboard
-            .set("target_pos", BlackboardValue::Vector(first_point));
+        //build BT tree
+        let tree = self.build_tree();
 
-        // Tree structure:
-        // Sequence
-        //  1. Patrol Logic (update target, return Success when arrived)
-        //  2. Wait (pause)
-        //  3. WalkToTarget
+        //spawn BT worker thread
+        thread::spawn(move || {
+            bt_worker(tree, snapshot_rx, command_tx);
+        });
 
-        // Actually, a better structure for continuous movement is:
-        // Selector
-        //   1. Sequence (Target Reached?)
-        //       a. Patrol (Calculate next point if arrived)
-        //       b. Wait (Visualize looking around)
-        //   2. WalkToTarget (Keep moving to current target)
-
-        let root = Box::new(Selector::new(vec![
-            Box::new(Sequence::new(vec![
-                Box::new(IsAtTarget::new("target_pos")),
-                Box::new(Wait::new(0.8)),
-                Box::new(NextWaypoint::new(route, "target_pos")),
-            ])),
-            Box::new(MoveToTarget::new("target_pos")),
-        ]));
-        logic.brain = Some(root);
+        let logic = CharacterLogic::new(animator, logger, snapshot_tx, command_rx);
         self.logic = Some(logic);
+
+        //logic
+        //.blackboard
+        //.set("target_pos", BlackboardValue::Vector(first_point));
     }
 
     fn process(&mut self, delta: f32) {
         if let Some(logic) = &mut self.logic {
+            //logic.tick_ai();
             logic.process(delta);
 
             //sync position with sprite

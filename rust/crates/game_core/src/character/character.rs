@@ -1,12 +1,15 @@
 use crate::bt::blackboard::Blackboard;
 use crate::bt::BoxBTNode;
+use crate::character::command::CharacterCommand;
 use crate::character::request::StateRequest;
+use crate::character::snapshot::CharacterSnapshot;
 use crate::fsm::FSM;
 use crate::fsm::{IdleState, RunState, TurnState, WalkState};
 use crate::StateType;
 use platform::logger::LogType;
 use platform::types::{Direction, Vector2D};
 use platform::{Animator, Logger};
+use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
 pub struct CharacterLogic {
@@ -21,10 +24,19 @@ pub struct CharacterLogic {
     animator: Box<dyn Animator>,
     logger: Box<dyn Logger>,
     position: Vector2D,
+
+    //AI channels
+    snapshot_tx: Sender<CharacterSnapshot>,
+    command_rx: Receiver<Vec<CharacterCommand>>,
 }
 
 impl CharacterLogic {
-    pub fn new(animator: Box<dyn Animator>, logger: Box<dyn Logger>) -> Self {
+    pub fn new(
+        animator: Box<dyn Animator>,
+        logger: Box<dyn Logger>,
+        snapshot_tx: Sender<CharacterSnapshot>,
+        command_rx: Receiver<Vec<CharacterCommand>>,
+    ) -> Self {
         logger.log(LogType::info, "Create struct CharacterLogic");
         Self {
             direction: Direction::SOUTH,
@@ -33,9 +45,11 @@ impl CharacterLogic {
             brain: None,
             blackboard: Blackboard::new(),
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
-            position: Vector2D { x: 0.0, y: 0.0 },
+            position: Vector2D::ZERO,
             animator,
             logger,
+            snapshot_tx,
+            command_rx,
         }
     }
 
@@ -177,6 +191,30 @@ impl CharacterLogic {
         self.state = Some(next_state);
     }
 
+    pub fn snapshot(&self) -> CharacterSnapshot {
+        CharacterSnapshot {
+            position: self.animator.get_position(),
+            direction: self.direction.clone(),
+            velocity: self.speed * self.direction.to_vector(),
+            is_idle: self.is_idle(),
+        }
+    }
+
+    pub fn apply(&mut self, cmd: CharacterCommand) {
+        self.logger
+            .log(LogType::debug, &format!("Recieved command: {:?}", cmd));
+    }
+
+    pub fn tick_ai(&mut self) {
+        let _ = self.snapshot_tx.send(self.snapshot());
+
+        if let Ok(commands) = self.command_rx.try_recv() {
+            for cmd in commands {
+                self.apply(cmd);
+            }
+        }
+    }
+
     pub fn process(&mut self, delta: f32) {
         let state_type = if let Some(state) = &self.state {
             Some(state.get_type())
@@ -190,12 +228,8 @@ impl CharacterLogic {
                 self.direction, state_type, self.position
             ),
         );
-        if let Some(mut brain) = self.brain.take() {
-            let bb = self.blackboard.clone();
 
-            brain.tick(self, &bb, delta);
-            self.brain = Some(brain);
-        }
+        self.tick_ai();
 
         // Process pending request
         self.handle_transitions();
