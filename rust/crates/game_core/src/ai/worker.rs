@@ -8,12 +8,10 @@ pub fn bt_worker(
     snapshot_rx: Receiver<CharacterSnapshot>,
     command_tx: Sender<Vec<CharacterCommand>>,
 ) {
+    let blackboard = Blackboard::new();
     while let Ok(snapshot) = snapshot_rx.recv() {
         let mut commands = Vec::new();
-        let blackboard = Blackboard::new();
-
         tree.tick(&snapshot, &blackboard, 0.016, &mut commands);
-
         let _ = command_tx.send(commands);
     }
 }

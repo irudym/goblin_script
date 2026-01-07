@@ -20,10 +20,10 @@ impl BTNode for FindTarget {
     fn reset(&mut self) {}
     fn tick(
         &mut self,
-        snapshot: &CharacterSnapshot,
+        _snapshot: &CharacterSnapshot,
         blackboard: &Blackboard,
         _delta: f32,
-        out: &mut Vec<CharacterCommand>,
+        _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
         //TODO: placeholder!
         //
@@ -102,24 +102,21 @@ impl BTNode for MoveToTarget {
                 Direction::NORTH
             }
         };
-        println!(
-            "| ---> need to switch to new direction: {} from: {}",
-            new_direction, snapshot.direction
-        );
 
         //3. update FSM state
         if snapshot.direction != new_direction {
             //need to turn
             //character.request_state(StateRequest::Turn(new_direction));
+            println!(
+                "| ---> need to switch to new direction: {} from: {}",
+                new_direction, snapshot.direction
+            );
             out.push(CharacterCommand::ChangeState(StateRequest::Turn(
                 new_direction,
             )))
         } else {
             //trugger run state
-            //if character.is_idle() {
-            //character.request_state(StateRequest::Run);
-            out.push(CharacterCommand::ChangeState(StateRequest::Run))
-            //}
+            out.push(CharacterCommand::ChangeState(StateRequest::Run));
         }
 
         return NodeStatus::RUNNING;
@@ -192,6 +189,7 @@ impl BTNode for IsAtTarget {
         _delta: f32,
         _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
+        println!("[-] Node: IsAtTarget: blackboard: {:?}", &blackboard);
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
             _ => return NodeStatus::FAILURE,
@@ -282,6 +280,7 @@ impl BTNode for Wait {
         delta: f32,
         _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
+        println!("[-] Node: Wait({}/{})", &self.current_time, &self.delay);
         self.current_time += delta;
         if self.current_time > self.delay {
             <Wait as BTNode>::reset(self);

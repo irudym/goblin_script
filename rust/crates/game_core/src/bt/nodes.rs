@@ -2,7 +2,6 @@ use crate::bt::Blackboard;
 use crate::bt::{BoxBTNode, NodeStatus};
 use crate::character::command::CharacterCommand;
 use crate::character::snapshot::CharacterSnapshot;
-use crate::CharacterLogic;
 
 use super::BTNode;
 

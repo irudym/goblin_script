@@ -7,10 +7,7 @@ pub mod nodes;
 
 pub use blackboard::Blackboard;
 
-use crate::{
-    character::{command::CharacterCommand, snapshot::CharacterSnapshot},
-    CharacterLogic,
-};
+use crate::character::{command::CharacterCommand, snapshot::CharacterSnapshot};
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum NodeStatus {

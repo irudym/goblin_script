@@ -1,4 +1,3 @@
-use crate::bt::blackboard::Blackboard;
 use crate::bt::BoxBTNode;
 use crate::character::command::CharacterCommand;
 use crate::character::request::StateRequest;
@@ -18,12 +17,10 @@ pub struct CharacterLogic {
     state: Option<Box<dyn FSM>>, // the active state machine, accessible only by Main Thread
     pub brain: Option<BoxBTNode>, // character AI
 
-    pub blackboard: Blackboard,
     pending_request: Arc<Mutex<Option<StateRequest>>>, // the request buffer, thread safe
 
     animator: Box<dyn Animator>,
     logger: Box<dyn Logger>,
-    position: Vector2D,
 
     //AI channels
     snapshot_tx: Sender<CharacterSnapshot>,
@@ -43,9 +40,7 @@ impl CharacterLogic {
             speed: 100.0,
             state: None,
             brain: None,
-            blackboard: Blackboard::new(),
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
-            position: Vector2D::ZERO,
             animator,
             logger,
             snapshot_tx,
@@ -202,7 +197,16 @@ impl CharacterLogic {
 
     pub fn apply(&mut self, cmd: CharacterCommand) {
         self.logger
-            .log(LogType::debug, &format!("Recieved command: {:?}", cmd));
+            .log(LogType::debug, &format!("received command: {:?}", cmd));
+        match cmd {
+            CharacterCommand::ChangeState(state) => {
+                self.request_state(state);
+            }
+            CharacterCommand::SetDirection(direction) => {
+                self.direction = direction;
+            }
+            _ => (),
+        }
     }
 
     pub fn tick_ai(&mut self) {
@@ -225,7 +229,9 @@ impl CharacterLogic {
             LogType::warn,
             &format!(
                 "Character::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
-                self.direction, state_type, self.position
+                self.direction,
+                state_type,
+                self.get_position()
             ),
         );
 
@@ -240,6 +246,7 @@ impl CharacterLogic {
             self.state = Some(state);
         }
 
+        // Update animation
         self.animator.process(delta);
     }
 }

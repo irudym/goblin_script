@@ -1,9 +1,8 @@
-use godot::classes::{AnimatedSprite2D, Area2D, IArea2D, Input};
+use godot::classes::{AnimatedSprite2D, Area2D, IArea2D};
 use godot::prelude::*;
 
 use crate::godot_animator::GodotAnimator;
 use crate::godot_logger::GodotLogger;
-use game_core::bt::blackboard::BlackboardValue;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::{BoxBTNode, CharacterLogic};
@@ -43,16 +42,11 @@ impl Character {
             Vector2D::new(0.0, 5.0), // Return home
         ];
 
-        let first_point = Vector2D {
-            x: route[0].x * 32.0,
-            y: route[0].y * 32.0,
-        };
-
         Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
-                Box::new(IsAtTarget::new("target_pos")),
-                Box::new(Wait::new(0.8)),
                 Box::new(NextWaypoint::new(route, "target_pos")),
+                Box::new(Wait::new(0.8)),
+                Box::new(IsAtTarget::new("target_pos")),
             ])),
             Box::new(MoveToTarget::new("target_pos")),
         ]))
@@ -102,6 +96,11 @@ impl IArea2D for Character {
             logic.process(delta);
 
             //sync position with sprite
+            let position = logic.get_position();
+            self.base_mut().set_position(Vector2 {
+                x: position.x,
+                y: position.y,
+            });
         }
         /*
         if let Some(mut brain) = self.brain.take() {

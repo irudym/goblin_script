@@ -58,16 +58,17 @@ fn main() {
     //       b. Wait (Visualize looking around)
     //   2. WalkToTarget (Keep moving to current target)
 
-    let mut tree = Box::new(Selector::new(vec![
+    let tree = Box::new(Selector::new(vec![
         Box::new(Sequence::new(vec![
             Box::new(NextWaypoint::new(route, "target_pos")),
             //Box::new(IsAtTarget::new("target_pos")),
-            Box::new(Wait::new(0.8)),
+            Box::new(Wait::new(0.1)),
             Box::new(IsAtTarget::new("target_pos")),
         ])),
         Box::new(MoveToTarget::new("target_pos")),
     ]));
 
+    // create a character AI brain a sa separate thread.
     std::thread::spawn(move || {
         bt_worker(tree, snapshot_rx, command_tx);
     });
@@ -80,13 +81,13 @@ fn main() {
     );
 
     // run 10 cycles
-    for i in 0..100 {
+    for i in 0..700 {
         main_logger.log(LogType::info, &format!("Cycle: {}", i));
         main_logger.log(
             LogType::debug,
             &format!("Character\nposition: {:?}", character.get_position()),
         );
         character.process(0.016);
-        std::thread::sleep(Duration::from_millis(5));
+        std::thread::sleep(Duration::from_millis(100));
     }
 }
