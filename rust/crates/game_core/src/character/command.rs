@@ -8,4 +8,5 @@ pub enum CharacterCommand {
     SetDirection(Direction),
     PlayAnimation(String),
     ChangeState(StateRequest),
+    SnapToCell,
 }

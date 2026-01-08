@@ -25,6 +25,8 @@ pub struct CharacterLogic {
     //AI channels
     snapshot_tx: Sender<CharacterSnapshot>,
     command_rx: Receiver<Vec<CharacterCommand>>,
+
+    cell_size: f32, //default value: 32px
 }
 
 impl CharacterLogic {
@@ -45,18 +47,20 @@ impl CharacterLogic {
             logger,
             snapshot_tx,
             command_rx,
+            cell_size: 32.0,
         }
     }
 
+    // TODO: need to get the cell size as a parameter
     pub fn snap_to_cell(&mut self) {
         // get cell i,j
         let position = self.get_position();
-        let i = f32::round(position.x / 32.0) as i32;
-        let j = f32::round(position.y / 32.0) as i32;
+        let i = f32::round(position.x / self.cell_size) as i32;
+        let j = f32::round(position.y / self.cell_size) as i32;
 
         self.set_position(Vector2D {
-            x: (i * 32) as f32,
-            y: (j * 32) as f32,
+            x: (i as f32 * self.cell_size) as f32,
+            y: (j as f32 * self.cell_size) as f32,
         });
     }
 
@@ -66,6 +70,10 @@ impl CharacterLogic {
 
     pub fn set_position(&mut self, position: Vector2D) {
         self.animator.set_position(position);
+    }
+
+    pub fn set_cell_size(&mut self, size: f32) {
+        self.cell_size = size;
     }
 
     // check if the character is in the idle state
@@ -195,16 +203,22 @@ impl CharacterLogic {
         }
     }
 
+    // Dispatch the command
     pub fn apply(&mut self, cmd: CharacterCommand) {
         self.logger
             .log(LogType::debug, &format!("received command: {:?}", cmd));
+        use CharacterCommand::*;
         match cmd {
-            CharacterCommand::ChangeState(state) => {
+            ChangeState(state) => {
                 self.request_state(state);
             }
-            CharacterCommand::SetDirection(direction) => {
+            SetDirection(direction) => {
                 self.direction = direction;
             }
+            SnapToCell => {
+                self.snap_to_cell();
+            }
+
             _ => (),
         }
     }

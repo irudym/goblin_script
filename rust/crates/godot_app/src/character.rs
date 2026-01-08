@@ -84,41 +84,13 @@ impl IArea2D for Character {
 
         let logic = CharacterLogic::new(animator, logger, snapshot_tx, command_rx);
         self.logic = Some(logic);
-
-        //logic
-        //.blackboard
-        //.set("target_pos", BlackboardValue::Vector(first_point));
     }
 
     fn process(&mut self, delta: f32) {
         if let Some(logic) = &mut self.logic {
-            //logic.tick_ai();
             logic.process(delta);
-
-            //sync position with sprite
-            let position = logic.get_position();
-            self.base_mut().set_position(Vector2 {
-                x: position.x,
-                y: position.y,
-            });
         }
         /*
-        if let Some(mut brain) = self.brain.take() {
-            let bb = self.blackboard.clone();
-
-            brain.tick(self, &bb, delta);
-            self.brain = Some(brain);
-        }
-
-        // Process pending request
-        self.handle_transitions();
-
-        // Update the current state
-        if let Some(mut state) = self.state.take() {
-            state.update(delta, self);
-            self.state = Some(state);
-        }
-
         // Handle input
         let input = Input::singleton();
         //godot_print!("Key: {}", input.is_anything_pressed());

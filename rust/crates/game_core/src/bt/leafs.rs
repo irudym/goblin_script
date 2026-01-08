@@ -80,8 +80,7 @@ impl BTNode for MoveToTarget {
         if distance < 6.0 {
             // the character has arrived
             // fix his position
-            //character.snap_to_cell();
-            //character.request_state(StateRequest::Idle);
+            out.push(CharacterCommand::SnapToCell);
             out.push(CharacterCommand::ChangeState(StateRequest::Idle));
             return NodeStatus::SUCCESS;
         }
