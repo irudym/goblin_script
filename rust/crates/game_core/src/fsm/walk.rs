@@ -29,8 +29,6 @@ impl FSM for WalkState {
     }
 
     fn enter(&mut self, character: &mut CharacterLogic) {
-        //check direction
-
         character.play_animation_with_direction("run");
     }
 

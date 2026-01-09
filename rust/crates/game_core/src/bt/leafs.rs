@@ -72,11 +72,6 @@ impl BTNode for MoveToTarget {
         let current_pos = snapshot.position;
         let distance = current_pos.distance_to(target_pos);
 
-        println!(
-            "| ---> target_pos: {:?}, distance: {}",
-            target_pos, distance
-        );
-
         if distance < 6.0 {
             // the character has arrived
             // fix his position
@@ -105,11 +100,6 @@ impl BTNode for MoveToTarget {
         //3. update FSM state
         if snapshot.direction != new_direction {
             //need to turn
-            //character.request_state(StateRequest::Turn(new_direction));
-            println!(
-                "| ---> need to switch to new direction: {} from: {}",
-                new_direction, snapshot.direction
-            );
             out.push(CharacterCommand::ChangeState(StateRequest::Turn(
                 new_direction,
             )))
@@ -188,7 +178,6 @@ impl BTNode for IsAtTarget {
         _delta: f32,
         _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
-        println!("[-] Node: IsAtTarget: blackboard: {:?}", &blackboard);
         let target_pos = match blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
             _ => return NodeStatus::FAILURE,
@@ -279,7 +268,6 @@ impl BTNode for Wait {
         delta: f32,
         _out: &mut Vec<CharacterCommand>,
     ) -> NodeStatus {
-        println!("[-] Node: Wait({}/{})", &self.current_time, &self.delay);
         self.current_time += delta;
         if self.current_time > self.delay {
             <Wait as BTNode>::reset(self);

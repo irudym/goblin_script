@@ -36,10 +36,10 @@ impl Character {
         //       b. Wait (Visualize looking around)
         //   2. WalkToTarget (Keep moving to current target)
         let route = vec![
-            Vector2D::new(0.0, 0.0),
-            Vector2D::new(5.0, 0.0), // Move 5 tiles East
-            Vector2D::new(5.0, 5.0), // Move 5 tiles South
-            Vector2D::new(0.0, 5.0), // Return home
+            Vector2D::new(5.0, 2.0),
+            Vector2D::new(9.0, 2.0), // Move 4 tiles East
+            Vector2D::new(9.0, 6.0), // Move 4 tiles South
+            Vector2D::new(5.0, 6.0), // Return home
         ];
 
         Box::new(Selector::new(vec![
@@ -82,7 +82,8 @@ impl IArea2D for Character {
             bt_worker(tree, snapshot_rx, command_tx);
         });
 
-        let logic = CharacterLogic::new(animator, logger, snapshot_tx, command_rx);
+        let mut logic = CharacterLogic::new(animator, logger, snapshot_tx, command_rx);
+        logic.set_cell_position(5, 2);
         self.logic = Some(logic);
     }
 

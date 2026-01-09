@@ -72,6 +72,14 @@ impl CharacterLogic {
         self.animator.set_position(position);
     }
 
+    // Set character position in tile grid coordinates: I,J
+    pub fn set_cell_position(&mut self, i: i32, j: i32) {
+        self.set_position(Vector2D {
+            x: (i as f32 * self.cell_size) as f32,
+            y: (j as f32 * self.cell_size) as f32,
+        });
+    }
+
     pub fn set_cell_size(&mut self, size: f32) {
         self.cell_size = size;
     }

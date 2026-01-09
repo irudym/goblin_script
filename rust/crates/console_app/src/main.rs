@@ -29,21 +29,14 @@ fn main() {
 
     // test patrol
     let route = vec![
-        Vector2D::new(0.0, 0.0),
-        Vector2D::new(5.0, 0.0), // Move 5 tiles East
-        Vector2D::new(5.0, 5.0), // Move 5 tiles South
-        Vector2D::new(0.0, 5.0), // Return home
+        Vector2D::new(5.0, 2.0),
+        Vector2D::new(9.0, 2.0), // Move 4 tiles East
+        Vector2D::new(9.0, 6.0), // Move 4 tiles South
+        Vector2D::new(5.0, 6.0), // Return home
     ];
     let main_logger = ConsoleLogger::new();
 
     main_logger.log(LogType::info, &format!("Patrol points: {:?}", route));
-
-    //let blackboard = Blackboard::new();
-    let first_point = Vector2D {
-        x: route[0].x * 32.0,
-        y: route[0].y * 32.0,
-    };
-    //blackboard.set("target_pos", BlackboardValue::Vector(first_point));
 
     // Tree structure:
     // Sequence
@@ -68,7 +61,7 @@ fn main() {
         Box::new(MoveToTarget::new("target_pos")),
     ]));
 
-    // create a character AI brain a sa separate thread.
+    // create a character AI brain a separated thread.
     std::thread::spawn(move || {
         bt_worker(tree, snapshot_rx, command_tx);
     });
@@ -79,6 +72,8 @@ fn main() {
         snapshot_tx,
         command_rx,
     );
+
+    character.set_cell_position(5, 2);
 
     // run 10 cycles
     for i in 0..700 {
