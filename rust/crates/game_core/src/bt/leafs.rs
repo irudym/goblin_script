@@ -1,30 +1,36 @@
-use crate::bt::{blackboard::Blackboard, blackboard::BlackboardValue, BTNode, NodeStatus};
-use crate::character::command::CharacterCommand;
+use crate::bt::command::BTCommand;
+use crate::bt::result::BTResult;
+use crate::bt::{blackboard::BlackboardValue, BTNode, NodeStatus};
 use crate::character::request::StateRequest;
 use crate::character::snapshot::CharacterSnapshot;
 use platform::types::{Direction, Vector2D};
 
 pub struct FindTarget {
     target_key: String, // "target_pos"
+    id: usize,
 }
 
 impl FindTarget {
     pub fn new(key: &str) -> Self {
         Self {
             target_key: key.to_string(),
+            id: 0,
         }
     }
 }
 
 impl BTNode for FindTarget {
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn reset(&mut self) {}
-    fn tick(
-        &mut self,
-        _snapshot: &CharacterSnapshot,
-        blackboard: &Blackboard,
-        _delta: f32,
-        _out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
+
+    fn tick(&self, snapshot: &CharacterSnapshot, _delta: f32) -> (NodeStatus, BTResult) {
         //TODO: placeholder!
         //
         let player_found = true;
@@ -32,57 +38,61 @@ impl BTNode for FindTarget {
 
         if player_found {
             // write to memory
-            blackboard.set(&self.target_key, BlackboardValue::Vector(player_position));
-            return NodeStatus::SUCCESS;
+            snapshot
+                .blackboard
+                .set(&self.target_key, BlackboardValue::Vector(player_position));
+            return (NodeStatus::SUCCESS, BTResult::empty());
         }
 
-        return NodeStatus::FAILURE;
+        return (NodeStatus::FAILURE, BTResult::empty());
     }
 }
 
 pub struct MoveToTarget {
     target_key: String,
+    id: usize,
 }
 
 impl MoveToTarget {
     pub fn new(key: &str) -> Self {
         Self {
             target_key: key.to_string(),
+            id: 0,
         }
     }
 }
 
 impl BTNode for MoveToTarget {
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn reset(&mut self) {}
-    fn tick(
-        &mut self,
-        snapshot: &CharacterSnapshot,
-        blackboard: &Blackboard,
-        _delta: f32,
-        out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
-        println!("[-] Node: MoveToTarget");
+
+    fn tick(&self, snapshot: &CharacterSnapshot, _delta: f32) -> (NodeStatus, BTResult) {
+        let bb = &snapshot.blackboard;
+
+        let mut commands = vec![];
         //1. read from memory (blackboard) the target position
-        let target_pos = match blackboard.get(&self.target_key) {
+        let target_pos = match bb.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
-            _ => return NodeStatus::FAILURE, //no target set, or wrong value type
+            _ => return (NodeStatus::FAILURE, BTResult { commands }), //no target set, or wrong value type
         };
 
         // check if the character has arrived to the to target pos
         let current_pos = snapshot.position;
         let distance = current_pos.distance_to(target_pos);
 
-        println!(
-            "| ---> target_pos: {:?}, distance: {}",
-            target_pos, distance
-        );
-
         if distance < 6.0 {
             // the character has arrived
             // fix his position
-            out.push(CharacterCommand::SnapToCell);
-            out.push(CharacterCommand::ChangeState(StateRequest::Idle));
-            return NodeStatus::SUCCESS;
+            commands.push(BTCommand::SnapToCell);
+            commands.push(BTCommand::ChangeState(StateRequest::Idle));
+            return (NodeStatus::SUCCESS, BTResult { commands });
         }
 
         //2. calculate direction logic
@@ -105,68 +115,74 @@ impl BTNode for MoveToTarget {
         //3. update FSM state
         if snapshot.direction != new_direction {
             //need to turn
-            //character.request_state(StateRequest::Turn(new_direction));
-            println!(
-                "| ---> need to switch to new direction: {} from: {}",
-                new_direction, snapshot.direction
-            );
-            out.push(CharacterCommand::ChangeState(StateRequest::Turn(
-                new_direction,
-            )))
+            commands.push(BTCommand::ChangeState(StateRequest::Turn(new_direction)))
         } else {
-            //trugger run state
-            out.push(CharacterCommand::ChangeState(StateRequest::Run));
+            //trigger run state
+            commands.push(BTCommand::ChangeState(StateRequest::Run));
         }
 
-        return NodeStatus::RUNNING;
+        return (NodeStatus::RUNNING, BTResult { commands });
     }
 }
 
 pub struct NextWaypoint {
     waypoints: Vec<Vector2D>,
-    current_index: usize,
     target_key: String,
     tile_size: f32,
+    id: usize,
 }
 
 impl NextWaypoint {
     pub fn new(waypoints: Vec<Vector2D>, key: &str) -> Self {
         Self {
             waypoints,
-            current_index: 0,
             target_key: key.to_string(),
             tile_size: 32.0,
+            id: 0,
         }
     }
 }
 
 impl BTNode for NextWaypoint {
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
     fn reset(&mut self) {}
 
-    fn tick(
-        &mut self,
-        _snapshot: &CharacterSnapshot,
-        blackboard: &Blackboard,
-        _delta: f32,
-        _out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
-        println!("[-] Node: NextWaypoint");
+    fn tick(&self, snapshot: &CharacterSnapshot, _delta: f32) -> (NodeStatus, BTResult) {
+        let bb = &snapshot.blackboard;
+
+        let key = format!("{}.nxw", self.id);
+
+        let result = BTResult::empty();
+
         if self.waypoints.is_empty() {
-            return NodeStatus::FAILURE;
+            return (NodeStatus::FAILURE, result);
         }
 
-        self.current_index = (self.current_index + 1) % self.waypoints.len();
+        let mut current_index = match bb.get(&key) {
+            Some(BlackboardValue::Int(val)) => val as usize,
+            _ => 0,
+        };
 
-        let next_pos = self.waypoints[self.current_index] * self.tile_size;
-        blackboard.set(&self.target_key, BlackboardValue::Vector(next_pos));
+        current_index = (current_index + 1) % self.waypoints.len();
 
-        NodeStatus::SUCCESS
+        let next_pos = self.waypoints[current_index] * self.tile_size;
+        bb.set(&self.target_key, BlackboardValue::Vector(next_pos));
+
+        bb.set(&key, BlackboardValue::Int(current_index as i32));
+        (NodeStatus::SUCCESS, result)
     }
 }
 
 pub struct IsAtTarget {
     target_key: String,
     threshold: f32,
+    id: usize,
 }
 
 impl IsAtTarget {
@@ -174,80 +190,85 @@ impl IsAtTarget {
         Self {
             target_key: key.to_string(),
             threshold: 6.0,
+            id: 0,
         }
     }
 }
 
 impl BTNode for IsAtTarget {
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn reset(&mut self) {}
 
-    fn tick(
-        &mut self,
-        snapshot: &CharacterSnapshot,
-        blackboard: &Blackboard,
-        _delta: f32,
-        _out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
-        println!("[-] Node: IsAtTarget: blackboard: {:?}", &blackboard);
-        let target_pos = match blackboard.get(&self.target_key) {
+    fn tick(&self, snapshot: &CharacterSnapshot, _delta: f32) -> (NodeStatus, BTResult) {
+        let target_pos = match snapshot.blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
-            _ => return NodeStatus::FAILURE,
+            _ => return (NodeStatus::FAILURE, BTResult::empty()),
         };
 
         let dist = snapshot.position.distance_to(target_pos);
 
         if dist <= self.threshold {
-            NodeStatus::SUCCESS
+            (NodeStatus::SUCCESS, BTResult::empty())
         } else {
-            NodeStatus::FAILURE
+            (NodeStatus::FAILURE, BTResult::empty())
         }
     }
 }
 
 pub struct WalkToTarget {
     target_key: String,
+    id: usize,
 }
 
 impl WalkToTarget {
     pub fn new(key: &str) -> Self {
         Self {
             target_key: key.to_string(),
+            id: 0,
         }
     }
 }
 
 impl BTNode for WalkToTarget {
-    fn tick(
-        &mut self,
-        snapshot: &CharacterSnapshot,
-        blackboard: &Blackboard,
-        _delta: f32,
-        out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn tick(&self, snapshot: &CharacterSnapshot, _delta: f32) -> (NodeStatus, BTResult) {
         //1. read target
-        let target_pos = match blackboard.get(&self.target_key) {
+        let target_pos = match snapshot.blackboard.get(&self.target_key) {
             Some(BlackboardValue::Vector(v)) => v,
             _ => {
-                return NodeStatus::FAILURE;
+                return (NodeStatus::FAILURE, BTResult::empty());
             }
         };
 
         //2. check FSM state:
         // Idle and ready to move?
         // Walking, then character is busy
+        let mut commands = vec![];
         if snapshot.is_idle {
             let current_pos = snapshot.position;
 
             if current_pos.distance_to(target_pos) > 1.0 {
                 //character.request_state(StateRequest::WalkTo(target_pos));
-                out.push(CharacterCommand::ChangeState(StateRequest::WalkTo(
-                    target_pos,
-                )));
+                commands.push(BTCommand::ChangeState(StateRequest::WalkTo(target_pos)));
             } else {
-                return NodeStatus::SUCCESS;
+                return (NodeStatus::SUCCESS, BTResult { commands });
             }
         }
-        NodeStatus::RUNNING
+        (NodeStatus::RUNNING, BTResult { commands })
     }
 
     fn reset(&mut self) {}
@@ -255,36 +276,42 @@ impl BTNode for WalkToTarget {
 
 pub struct Wait {
     delay: f32,
-    current_time: f32,
+    id: usize,
 }
 
 impl Wait {
     pub fn new(delay: f32) -> Self {
-        Self {
-            delay,
-            current_time: 0.0,
-        }
+        Self { delay, id: 0 }
     }
 }
 
 impl BTNode for Wait {
-    fn reset(&mut self) {
-        self.current_time = 0.0;
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
     }
 
-    fn tick(
-        &mut self,
-        _snapshot: &CharacterSnapshot,
-        _blackboard: &Blackboard,
-        delta: f32,
-        _out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
-        println!("[-] Node: Wait({}/{})", &self.current_time, &self.delay);
-        self.current_time += delta;
-        if self.current_time > self.delay {
-            <Wait as BTNode>::reset(self);
-            return NodeStatus::SUCCESS;
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn reset(&mut self) {}
+
+    fn tick(&self, snapshot: &CharacterSnapshot, delta: f32) -> (NodeStatus, BTResult) {
+        let bb = &snapshot.blackboard;
+        let key = format!("{}.timer", self.id);
+
+        let mut current_time = match bb.get(&key) {
+            Some(BlackboardValue::Float(val)) => val,
+            _ => 0.0,
+        };
+
+        current_time += delta;
+        if current_time > self.delay {
+            bb.set(&key, BlackboardValue::Float(0.0));
+            return (NodeStatus::SUCCESS, BTResult::empty());
         }
-        NodeStatus::RUNNING
+
+        bb.set(&key, BlackboardValue::Float(current_time));
+        (NodeStatus::RUNNING, BTResult::empty())
     }
 }

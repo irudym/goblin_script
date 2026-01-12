@@ -1,16 +1,17 @@
 mod console_animator;
 mod console_logger;
-use game_core::ai::worker::bt_worker;
 use log::LevelFilter;
 
 use console_animator::ConsoleAnimator;
 use console_logger::ConsoleLogger;
+use game_core::ai::worker::init_bt_system;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
+use game_core::bt::BehaviourTree;
 use game_core::CharacterLogic;
 use platform::logger::{LogType, Logger};
 use platform::types::Vector2D;
-use std::sync::mpsc;
+use std::sync::Arc;
 use std::time::Duration;
 
 fn main() {
@@ -24,9 +25,6 @@ fn main() {
 
     let animator = ConsoleAnimator::new();
 
-    let (snapshot_tx, snapshot_rx) = mpsc::channel();
-    let (command_tx, command_rx) = mpsc::channel();
-
     // test patrol
     let route = vec![
         Vector2D::new(0.0, 0.0),
@@ -38,11 +36,8 @@ fn main() {
 
     main_logger.log(LogType::info, &format!("Patrol points: {:?}", route));
 
-    //let blackboard = Blackboard::new();
-    let first_point = Vector2D {
-        x: route[0].x * 32.0,
-        y: route[0].y * 32.0,
-    };
+    init_bt_system();
+
     //blackboard.set("target_pos", BlackboardValue::Vector(first_point));
 
     // Tree structure:
@@ -58,36 +53,27 @@ fn main() {
     //       b. Wait (Visualize looking around)
     //   2. WalkToTarget (Keep moving to current target)
 
-    let tree = Box::new(Selector::new(vec![
+    let tree = Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
         Box::new(Sequence::new(vec![
             Box::new(NextWaypoint::new(route, "target_pos")),
             //Box::new(IsAtTarget::new("target_pos")),
-            Box::new(Wait::new(0.1)),
+            Box::new(Wait::new(0.032)),
             Box::new(IsAtTarget::new("target_pos")),
         ])),
         Box::new(MoveToTarget::new("target_pos")),
-    ]));
+    ]))));
 
-    // create a character AI brain a sa separate thread.
-    std::thread::spawn(move || {
-        bt_worker(tree, snapshot_rx, command_tx);
-    });
-
-    let mut character = CharacterLogic::new(
-        Box::new(animator),
-        Box::new(logger),
-        snapshot_tx,
-        command_rx,
-    );
+    let mut character = CharacterLogic::new(1, Box::new(animator), Box::new(logger));
+    character.bt = tree;
 
     // run 10 cycles
-    for i in 0..700 {
+    for i in 0..500 {
         main_logger.log(LogType::info, &format!("Cycle: {}", i));
         main_logger.log(
             LogType::debug,
             &format!("Character\nposition: {:?}", character.get_position()),
         );
         character.process(0.016);
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(50));
     }
 }

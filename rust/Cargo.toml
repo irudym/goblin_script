@@ -4,5 +4,6 @@ members = [
  "crates/game_core",
  "crates/platform",
  "crates/godot_app",
+ "crates/benchmark",
 ]
 resolver = "2"
