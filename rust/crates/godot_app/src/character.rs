@@ -3,14 +3,14 @@ use godot::prelude::*;
 
 use crate::godot_animator::GodotAnimator;
 use crate::godot_logger::GodotLogger;
+use game_core::ai::worker::init_bt_system;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
-use game_core::{BoxBTNode, CharacterLogic};
+use game_core::bt::{BTRef, BehaviourTree};
+use game_core::CharacterLogic;
 use platform::types::Vector2D;
 
-use game_core::ai::worker::bt_worker;
-use std::sync::mpsc;
-use std::thread;
+use std::sync::Arc;
 
 #[derive(GodotClass)]
 #[class(base=Area2D)]
@@ -21,7 +21,7 @@ pub struct Character {
 
 impl Character {
     // check if animation is still in process, keep out the switching to new animation
-    fn build_tree(&self) -> BoxBTNode {
+    fn build_tree(&self) -> BTRef {
         // test patrol
         // Tree structure:
         // Sequence
@@ -42,14 +42,15 @@ impl Character {
             Vector2D::new(0.0, 5.0), // Return home
         ];
 
-        Box::new(Selector::new(vec![
+        Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
                 Box::new(NextWaypoint::new(route, "target_pos")),
-                Box::new(Wait::new(0.8)),
+                //Box::new(IsAtTarget::new("target_pos")),
+                Box::new(Wait::new(0.032)),
                 Box::new(IsAtTarget::new("target_pos")),
             ])),
             Box::new(MoveToTarget::new("target_pos")),
-        ]))
+        ]))))
     }
 }
 
@@ -70,19 +71,13 @@ impl IArea2D for Character {
         let animator = Box::new(GodotAnimator::new(sprite));
         let logger = Box::new(GodotLogger::new());
 
-        // create channels
-        let (snapshot_tx, snapshot_rx) = mpsc::channel();
-        let (command_tx, command_rx) = mpsc::channel();
-
         //build BT tree
         let tree = self.build_tree();
 
-        //spawn BT worker thread
-        thread::spawn(move || {
-            bt_worker(tree, snapshot_rx, command_tx);
-        });
+        init_bt_system();
 
-        let logic = CharacterLogic::new(animator, logger, snapshot_tx, command_rx);
+        let mut logic = CharacterLogic::new(1, animator, logger);
+        logic.bt = tree;
         self.logic = Some(logic);
     }
 

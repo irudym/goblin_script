@@ -13,6 +13,7 @@ Crates:
 * game_core - main game logic implementation: Finite State Machine, Behaviour Tree, CharacterLogic
 * console_app - application to test game logic in a terminal
 * godot_app - rust-godot binding
+* benchmark - stress test to benchmark multithreaded behaviour tree implementation
 
 
 ### Usage
@@ -24,4 +25,9 @@ cargo run -p console_app
 To build Godot extension
 ```
 cargo build -p godot_app
+```
+
+To run stress test
+```
+cargo run -p bench
 ```
