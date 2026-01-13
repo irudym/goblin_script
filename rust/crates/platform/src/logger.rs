@@ -1,11 +1,11 @@
 //Logging interface
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LogType {
-    warn,
-    info,
-    error,
-    debug,
-    trace,
+    Warn,
+    Info,
+    Error,
+    Debug,
+    Trace,
 }
 
 pub trait Logger: Send + Sync {

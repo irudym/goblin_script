@@ -1,14 +1,16 @@
 use godot::classes::{AnimatedSprite2D, Area2D, IArea2D};
 use godot::prelude::*;
+use platform::logger::LogType;
 
 use crate::godot_animator::GodotAnimator;
-use crate::godot_logger::GodotLogger;
 use game_core::ai::worker::init_bt_system;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::{BTRef, BehaviourTree};
 use game_core::CharacterLogic;
 use platform::types::Vector2D;
+
+use platform::shared::logger_global::log;
 
 use std::sync::Arc;
 
@@ -60,7 +62,10 @@ impl IArea2D for Character {
     }
 
     fn ready(&mut self) {
-        godot_print!("Character {} loaded", self.base().get_name());
+        log(
+            LogType::Info,
+            &format!("Character {} loaded", self.base().get_name()),
+        );
         //self.snap_to_cell();
         self.base_mut().set_position(Vector2 { x: 0.0, y: 0.0 });
 
@@ -68,14 +73,13 @@ impl IArea2D for Character {
             .base()
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
         let animator = Box::new(GodotAnimator::new(sprite));
-        let logger = Box::new(GodotLogger::new());
 
         //build BT tree
         let tree = self.build_tree();
 
         init_bt_system();
 
-        let mut logic = CharacterLogic::new(1, animator, logger);
+        let mut logic = CharacterLogic::new(1, animator);
         logic.bt = tree;
         self.logic = Some(logic);
     }

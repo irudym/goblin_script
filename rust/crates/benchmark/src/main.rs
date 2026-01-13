@@ -4,10 +4,10 @@ use game_core::bt::result::BTResult;
 use game_core::bt::*;
 use game_core::character::snapshot::CharacterSnapshot;
 use game_core::CharacterLogic;
-use platform::logger::LogType;
+use platform::logger::{LogType, Logger};
+use platform::shared::logger_global::init_logger;
 use platform::types::Vector2D;
 use platform::Animator;
-use platform::Logger;
 use rayon::iter::IntoParallelRefMutIterator;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -29,6 +29,8 @@ fn main() {
     let n_characters = 10_000;
     let ticks = 5000;
 
+    init_logger(Box::new(DummyLogger));
+
     println!("Running stress test for {n_characters} characters over {ticks} ticks.");
 
     // route sample
@@ -44,8 +46,7 @@ fn main() {
     // test in main thread
     let mut characters: Vec<CharacterLogic> = (0..n_characters)
         .map(|i| {
-            let mut char =
-                CharacterLogic::new(i, Box::new(DummyAnimator::new()), Box::new(DummyLogger));
+            let mut char = CharacterLogic::new(i, Box::new(DummyAnimator::new()));
             char.bt = shared_tree.clone();
             char
         })
@@ -185,6 +186,7 @@ impl Animator for DummyAnimator {
 }
 
 struct DummyLogger;
+
 impl Logger for DummyLogger {
     fn log(&self, _t: LogType, _msg: &str) {}
 }

@@ -9,10 +9,12 @@ use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::BehaviourTree;
 use game_core::CharacterLogic;
-use platform::logger::{LogType, Logger};
+use platform::logger::LogType;
 use platform::types::Vector2D;
 use std::sync::Arc;
 use std::time::Duration;
+
+use platform::shared::logger_global::{init_logger, log};
 
 fn main() {
     colog::basic_builder()
@@ -20,8 +22,8 @@ fn main() {
         .filter_level(LevelFilter::Trace)
         .init();
 
-    let logger = ConsoleLogger::new();
-    logger.log(LogType::info, "Running console app: GoblinScript");
+    init_logger(Box::new(ConsoleLogger));
+    log(LogType::Info, "Running console app: GoblinScript");
 
     let animator = ConsoleAnimator::new();
 
@@ -32,9 +34,8 @@ fn main() {
         Vector2D::new(5.0, 5.0), // Move 5 tiles South
         Vector2D::new(0.0, 5.0), // Return home
     ];
-    let main_logger = ConsoleLogger::new();
 
-    main_logger.log(LogType::info, &format!("Patrol points: {:?}", route));
+    log(LogType::Info, &format!("Patrol points: {:?}", route));
 
     init_bt_system();
 
@@ -63,14 +64,14 @@ fn main() {
         Box::new(MoveToTarget::new("target_pos")),
     ]))));
 
-    let mut character = CharacterLogic::new(1, Box::new(animator), Box::new(logger));
+    let mut character = CharacterLogic::new(1, Box::new(animator));
     character.bt = tree;
 
     // run 10 cycles
     for i in 0..500 {
-        main_logger.log(LogType::info, &format!("Cycle: {}", i));
-        main_logger.log(
-            LogType::debug,
+        log(LogType::Info, &format!("Cycle: {}", i));
+        log(
+            LogType::Debug,
             &format!("Character\nposition: {:?}", character.get_position()),
         );
         character.process(0.016);

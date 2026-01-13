@@ -13,8 +13,10 @@ use crate::fsm::{IdleState, RunState, TurnState, WalkState};
 use crate::StateType;
 use platform::logger::LogType;
 use platform::types::{Direction, Vector2D};
-use platform::{Animator, Logger};
+use platform::Animator;
 use std::sync::{Arc, Mutex};
+
+use platform::shared::logger_global::log;
 
 pub struct CharacterLogic {
     pub direction: Direction,
@@ -24,7 +26,6 @@ pub struct CharacterLogic {
     pending_request: Arc<Mutex<Option<StateRequest>>>, // the request buffer, thread safe
 
     animator: Box<dyn Animator>,
-    logger: Box<dyn Logger>,
 
     cell_size: f32, //default value: 32px
 
@@ -35,8 +36,8 @@ pub struct CharacterLogic {
 }
 
 impl CharacterLogic {
-    pub fn new(id: CharacterId, animator: Box<dyn Animator>, logger: Box<dyn Logger>) -> Self {
-        logger.log(LogType::info, "Create struct CharacterLogic");
+    pub fn new(id: CharacterId, animator: Box<dyn Animator>) -> Self {
+        log(LogType::Info, "Create struct CharacterLogic");
         Self {
             id,
             direction: Direction::SOUTH,
@@ -44,7 +45,6 @@ impl CharacterLogic {
             state: None,
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
-            logger,
             cell_size: 32.0,
             // pending_commands: Vec::new(),
             bt: Arc::new(BehaviourTree::default()),
@@ -121,8 +121,8 @@ impl CharacterLogic {
      * Can be called from Input, Behaviour Tree, or other threads
      */
     pub fn request_state(&self, request: StateRequest) {
-        self.logger.log(
-            LogType::debug,
+        log(
+            LogType::Debug,
             &format!(
                 "Character::request_state: {:?}, current direction: {}",
                 request, self.direction
@@ -160,8 +160,8 @@ impl CharacterLogic {
             true
         };
 
-        self.logger.log(
-            LogType::debug,
+        log(
+            LogType::Debug,
             &format!("check if can exit from the current state: {}", can_exit),
         );
 
@@ -194,8 +194,8 @@ impl CharacterLogic {
             }
             old_state.exit(self);
         }
-        self.logger.log(
-            LogType::debug,
+        log(
+            LogType::Debug,
             &format!("Enter to new state: {:?}", &new_state.get_type()),
         );
         let mut next_state = new_state;
@@ -216,8 +216,7 @@ impl CharacterLogic {
 
     // Process the command
     pub fn apply(&mut self, cmd: BTCommand) {
-        self.logger
-            .log(LogType::debug, &format!("received command: {:?}", cmd));
+        log(LogType::Debug, &format!("received command: {:?}", cmd));
         use BTCommand::*;
         match cmd {
             ChangeState(state) => {
@@ -260,8 +259,8 @@ impl CharacterLogic {
         } else {
             None
         };
-        self.logger.log(
-            LogType::warn,
+        log(
+            LogType::Warn,
             &format!(
                 "Character::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
                 self.direction,

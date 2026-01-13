@@ -1,15 +1,11 @@
 use std::collections::HashMap;
 
-use crate::console_logger::ConsoleLogger;
+use platform::shared::logger_global::log;
 
 use platform::types::Vector2D;
-use platform::{
-    animator::Animator,
-    logger::{LogType, Logger},
-};
+use platform::{animator::Animator, logger::LogType};
 
 pub struct ConsoleAnimator {
-    logger: ConsoleLogger,
     frames: HashMap<&'static str, (usize, bool)>, // animation name and (amount of frames, loop)
     current_animation: String,
     current_frame: usize,
@@ -18,8 +14,7 @@ pub struct ConsoleAnimator {
 
 impl ConsoleAnimator {
     pub fn new() -> Self {
-        let logger = ConsoleLogger::new();
-        logger.log(LogType::debug, "Creating ConsoleAnimator");
+        log(LogType::Debug, "Creating ConsoleAnimator");
         let mut frames = HashMap::new();
         frames.insert("stand_south", (1, true));
         frames.insert("stand_north", (1, true));
@@ -32,7 +27,6 @@ impl ConsoleAnimator {
         frames.insert("turn_north_east", (3, false));
 
         Self {
-            logger,
             frames,
             current_animation: "".to_string(),
             current_frame: 0,
@@ -43,28 +37,27 @@ impl ConsoleAnimator {
 
 impl Animator for ConsoleAnimator {
     fn play(&mut self, name: &str) {
-        self.logger
-            .log(LogType::info, &format!("Start playing animation: {}", name));
+        log(LogType::Info, &format!("Start playing animation: {}", name));
         self.current_animation = name.to_string();
         self.current_frame = 0;
     }
 
     fn is_playing(&self) -> bool {
-        self.logger.log(LogType::debug, "is_playing called");
+        log(LogType::Debug, "is_playing called");
         if let Some(anim) = self.frames.get(self.current_animation.as_str()) {
             if anim.1 {
-                self.logger.log(LogType::debug, "\ntrue");
+                log(LogType::Debug, "\ntrue");
                 return true;
             }
             if self.current_frame >= anim.0 {
-                self.logger.log(LogType::debug, "\nfalse");
+                log(LogType::Debug, "\nfalse");
                 return false;
             } else {
-                self.logger.log(LogType::debug, "\ntrue");
+                log(LogType::Debug, "\ntrue");
                 return true;
             }
         }
-        self.logger.log(LogType::debug, "\nfalse");
+        log(LogType::Debug, "\nfalse");
         false
     }
 
