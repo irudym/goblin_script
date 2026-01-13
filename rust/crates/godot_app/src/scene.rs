@@ -14,18 +14,18 @@ impl INode2D for Scene {
     }
 
     fn ready(&mut self) {
-        /*
         // get list of children
         let children = self.base().get_children();
         godot_print!("Children of the scene: {:?}", children);
         for node in children.iter_shared() {
+            godot_print!("==>> Child: {}", &node.get_name());
+            godot_print!("==>> Child type: {}", &node.get_class());
+            /*
             if let Ok(character) = node.try_cast::<Character>() {
-                godot_print!("==>> Child: {}", &character.get_name());
-                godot_print!("==>> Child type: {}", &character.get_class());
-                self.characters.push(character);
+
             }
+            */
         }
-        */
     }
 
     fn process(&mut self, _delta: f32) {

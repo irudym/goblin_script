@@ -213,6 +213,14 @@ impl BTNode for IsAtTarget {
         };
 
         let dist = snapshot.position.distance_to(target_pos);
+        /*
+        godot_print!(
+            "[=] IsAtTarget: snapshot: {:?}, target_pos: {}, dist: {}",
+            &snapshot,
+            target_pos,
+            dist
+        );
+        */
 
         if dist <= self.threshold {
             (NodeStatus::SUCCESS, BTResult::empty())

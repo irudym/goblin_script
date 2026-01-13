@@ -45,8 +45,7 @@ impl Character {
         Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
                 Box::new(NextWaypoint::new(route, "target_pos")),
-                //Box::new(IsAtTarget::new("target_pos")),
-                Box::new(Wait::new(0.032)),
+                Box::new(Wait::new(0.32)),
                 Box::new(IsAtTarget::new("target_pos")),
             ])),
             Box::new(MoveToTarget::new("target_pos")),
