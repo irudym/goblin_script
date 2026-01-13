@@ -14,6 +14,7 @@ use platform::types::Vector2D;
 use std::sync::Arc;
 use std::time::Duration;
 
+use platform::log;
 use platform::shared::logger_global::{init_logger, log};
 
 fn main() {
@@ -23,7 +24,7 @@ fn main() {
         .init();
 
     init_logger(Box::new(ConsoleLogger));
-    log(LogType::Info, "Running console app: GoblinScript");
+    log!(LogType::Info, "Running console app: GoblinScript");
 
     let animator = ConsoleAnimator::new();
 
@@ -35,7 +36,7 @@ fn main() {
         Vector2D::new(0.0, 5.0), // Return home
     ];
 
-    log(LogType::Info, &format!("Patrol points: {:?}", route));
+    log!(LogType::Info, "Patrol points: {:?}", route);
 
     init_bt_system();
 
@@ -69,10 +70,11 @@ fn main() {
 
     // run 10 cycles
     for i in 0..500 {
-        log(LogType::Info, &format!("Cycle: {}", i));
-        log(
+        log!(LogType::Info, "Cycle: {}", i);
+        log!(
             LogType::Debug,
-            &format!("Character\nposition: {:?}", character.get_position()),
+            "Character\nposition: {:?}",
+            character.get_position(),
         );
         character.process(0.016);
         std::thread::sleep(Duration::from_millis(50));
