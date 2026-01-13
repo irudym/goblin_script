@@ -14,8 +14,8 @@ use platform::types::Vector2D;
 use std::sync::Arc;
 use std::time::Duration;
 
-use platform::log;
 use platform::shared::logger_global::{init_logger, log};
+use platform::{log, log_info};
 
 fn main() {
     colog::basic_builder()
@@ -24,7 +24,7 @@ fn main() {
         .init();
 
     init_logger(Box::new(ConsoleLogger));
-    log!(LogType::Info, "Running console app: GoblinScript");
+    log_info!("Running console app: GoblinScript");
 
     let animator = ConsoleAnimator::new();
 

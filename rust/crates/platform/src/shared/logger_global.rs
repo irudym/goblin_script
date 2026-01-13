@@ -25,21 +25,21 @@ macro_rules! log {
 #[macro_export]
 macro_rules! log_error {
     ($($arg:tt)*) => {
-        $crate::log!($crate::LogLevel::Error, $($arg)*);
+        $crate::log!(LogType::Error, $($arg)*);
     };
 }
 
 #[macro_export]
 macro_rules! log_warn {
     ($($arg:tt)*) => {
-        $crate::log!($crate::LogLevel::Warn, $($arg)*);
+        $crate::log!(LogType::Warn, $($arg)*);
     };
 }
 
 #[macro_export]
 macro_rules! log_info {
     ($($arg:tt)*) => {
-        $crate::log!($crate::LogLevel::Info, $($arg)*);
+        $crate::log!(LogType::Info, $($arg)*);
     };
 }
 
@@ -47,7 +47,7 @@ macro_rules! log_info {
 macro_rules! log_debug {
     ($($arg:tt)*) => {
         #[cfg(debug_assertions)]
-        $crate::log!($crate::LogLevel::Debug, $($arg)*);
+        $crate::log!(LogType::Debug, $($arg)*);
     };
 }
 
@@ -55,6 +55,6 @@ macro_rules! log_debug {
 macro_rules! log_trace {
     ($($arg:tt)*) => {
         #[cfg(debug_assertions)]
-        $crate::log!($crate::LogLevel::Trace, $($arg)*);
+        $crate::log!(LogLevel::Trace, $($arg)*);
     };
 }

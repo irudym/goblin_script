@@ -4,6 +4,7 @@ use platform::logger::LogType;
 
 use crate::godot_logger::GodotLogger;
 use platform::shared::logger_global::{init_logger, log};
+use platform::{log, log_info};
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -26,8 +27,8 @@ impl INode2D for Scene {
             &format!("Children of the scene: {:?}", children),
         );
         for node in children.iter_shared() {
-            godot_print!("==>> Child: {}", &node.get_name());
-            godot_print!("==>> Child type: {}", &node.get_class());
+            log!(LogType::Info, "==>> Child: {}", &node.get_name());
+            log_info!("==>> Child type: {}", &node.get_class());
             /*
             if let Ok(character) = node.try_cast::<Character>() {
 
