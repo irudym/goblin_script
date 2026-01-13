@@ -7,4 +7,8 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
+crossbeam = "0.8.4"
+lazy_static = "1.5.0"
+num_cpus = "1.17.0"
 platform = {path = "../platform"}
+rayon = "1.11.0"

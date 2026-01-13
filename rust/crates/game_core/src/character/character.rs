@@ -1,53 +1,54 @@
-use crate::bt::BoxBTNode;
-use crate::character::command::CharacterCommand;
+use crate::ai::worker::*;
+use crate::bt::command::BTCommand;
+use crate::bt::job::BTJob;
+use crate::bt::result::BTResult;
+use crate::bt::BTRef;
+use crate::bt::BehaviourTree;
+use crate::bt::Blackboard;
 use crate::character::request::StateRequest;
 use crate::character::snapshot::CharacterSnapshot;
+use crate::character::CharacterId;
 use crate::fsm::FSM;
 use crate::fsm::{IdleState, RunState, TurnState, WalkState};
 use crate::StateType;
 use platform::logger::LogType;
 use platform::types::{Direction, Vector2D};
 use platform::{Animator, Logger};
-use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
 pub struct CharacterLogic {
     pub direction: Direction,
     pub speed: f32,
     state: Option<Box<dyn FSM>>, // the active state machine, accessible only by Main Thread
-    pub brain: Option<BoxBTNode>, // character AI
 
     pending_request: Arc<Mutex<Option<StateRequest>>>, // the request buffer, thread safe
 
     animator: Box<dyn Animator>,
     logger: Box<dyn Logger>,
 
-    //AI channels
-    snapshot_tx: Sender<CharacterSnapshot>,
-    command_rx: Receiver<Vec<CharacterCommand>>,
-
     cell_size: f32, //default value: 32px
+
+    // pending_commands: Vec<BTCommand>,
+    pub id: CharacterId,
+    pub bt: BTRef,
+    pub blackboard: Box<Blackboard>,
 }
 
 impl CharacterLogic {
-    pub fn new(
-        animator: Box<dyn Animator>,
-        logger: Box<dyn Logger>,
-        snapshot_tx: Sender<CharacterSnapshot>,
-        command_rx: Receiver<Vec<CharacterCommand>>,
-    ) -> Self {
+    pub fn new(id: CharacterId, animator: Box<dyn Animator>, logger: Box<dyn Logger>) -> Self {
         logger.log(LogType::info, "Create struct CharacterLogic");
         Self {
+            id,
             direction: Direction::SOUTH,
             speed: 100.0,
             state: None,
-            brain: None,
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
             logger,
-            snapshot_tx,
-            command_rx,
             cell_size: 32.0,
+            // pending_commands: Vec::new(),
+            bt: Arc::new(BehaviourTree::default()),
+            blackboard: Box::new(Blackboard::new()),
         }
     }
 
@@ -204,18 +205,20 @@ impl CharacterLogic {
 
     pub fn snapshot(&self) -> CharacterSnapshot {
         CharacterSnapshot {
+            id: self.id,
             position: self.animator.get_position(),
             direction: self.direction.clone(),
             velocity: self.speed * self.direction.to_vector(),
             is_idle: self.is_idle(),
+            blackboard: self.blackboard.clone(),
         }
     }
 
-    // Dispatch the command
-    pub fn apply(&mut self, cmd: CharacterCommand) {
+    // Process the command
+    pub fn apply(&mut self, cmd: BTCommand) {
         self.logger
             .log(LogType::debug, &format!("received command: {:?}", cmd));
-        use CharacterCommand::*;
+        use BTCommand::*;
         match cmd {
             ChangeState(state) => {
                 self.request_state(state);
@@ -231,13 +234,23 @@ impl CharacterLogic {
         }
     }
 
-    pub fn tick_ai(&mut self) {
-        let _ = self.snapshot_tx.send(self.snapshot());
+    pub fn process_commands(&mut self, result: BTResult) {
+        for cmd in result.commands {
+            self.apply(cmd);
+        }
+    }
 
-        if let Ok(commands) = self.command_rx.try_recv() {
-            for cmd in commands {
-                self.apply(cmd);
-            }
+    pub fn tick_ai(&mut self) {
+        if let Some(tx) = JOB_TX.get() {
+            let _ = tx.send(BTJob {
+                character_id: self.id,
+                snapshot: self.snapshot(),
+                bt: self.bt.clone(),
+            });
+        }
+
+        if let Some(result) = take_result(self.id) {
+            self.process_commands(result);
         }
     }
 

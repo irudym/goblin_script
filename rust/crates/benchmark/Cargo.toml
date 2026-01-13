@@ -1,0 +1,13 @@
+[package]
+name = "bench"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "bench"
+path = "src/main.rs"
+
+[dependencies]
+game_core = { path = "../game_core"}
+platform  = { path = "../platform" }
+rayon = "1.8"

@@ -2,13 +2,16 @@ use platform::types::Vector2D;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
+use crate::NodeStatus;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum BlackboardValue {
     Bool(bool),
     Int(i32),
     Float(f32),
     String(String),
-    Vector(Vector2D), //Godot Vector2
+    Vector(Vector2D),
+    NodeState(NodeStatus),
 }
 
 #[derive(Clone, Default, Debug)]
@@ -45,6 +48,15 @@ impl Blackboard {
             data.contains_key(key)
         } else {
             false
+        }
+    }
+
+    pub fn get_vector(&self, key: &str) -> Option<Vector2D> {
+        let value = self.get(key)?;
+
+        match value {
+            BlackboardValue::Vector(vector) => Some(vector),
+            _ => None,
         }
     }
 }

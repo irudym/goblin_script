@@ -1,6 +1,6 @@
-use crate::bt::Blackboard;
+use crate::bt::blackboard::BlackboardValue;
+use crate::bt::result::BTResult;
 use crate::bt::{BoxBTNode, NodeStatus};
-use crate::character::command::CharacterCommand;
 use crate::character::snapshot::CharacterSnapshot;
 
 use super::BTNode;
@@ -9,50 +9,71 @@ use super::BTNode;
  * / Sequence Node - all children must succeed
  */
 pub struct Sequence {
-    index: usize,
     children: Vec<BoxBTNode>,
+    id: usize,
 }
 
 impl Sequence {
     pub fn new(children: Vec<BoxBTNode>) -> Self {
-        Self { index: 0, children }
+        Self { children, id: 0 }
     }
 }
 
 impl BTNode for Sequence {
+    // TODO: add snapshot as a parameter, to get access to Blackboard
     fn reset(&mut self) {
-        self.index = 0;
         for child in &mut self.children {
             child.reset();
         }
     }
 
-    fn tick(
-        &mut self,
-        snapshot: &CharacterSnapshot,
-        blackboard: &Blackboard,
-        delta: f32,
-        out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
-        while self.index < self.children.len() {
-            let status = self.children[self.index].tick(snapshot, blackboard, delta, out);
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn children_mut(&mut self) -> Option<&mut Vec<BoxBTNode>> {
+        Some(&mut self.children)
+    }
+
+    fn tick(&self, snapshot: &CharacterSnapshot, delta: f32) -> (NodeStatus, BTResult) {
+        let mut combined_result = BTResult {
+            commands: Vec::new(),
+        };
+
+        let bb = &snapshot.blackboard;
+
+        let key = format!("{}.idx", self.id);
+
+        let mut index = match bb.get(&key) {
+            Some(BlackboardValue::Int(val)) => val as usize,
+            _ => 0,
+        };
+
+        while index < self.children.len() {
+            let (status, result) = self.children[index].tick(snapshot, delta);
+
+            combined_result.commands.extend(result.commands);
 
             match status {
+                NodeStatus::SUCCESS => index += 1,
                 NodeStatus::RUNNING => {
-                    return NodeStatus::RUNNING;
+                    bb.set(&key, BlackboardValue::Int(index as i32));
+                    return (status, combined_result);
                 }
                 NodeStatus::FAILURE => {
-                    self.index = 0; //reset the index
-                    return NodeStatus::FAILURE;
-                }
-                NodeStatus::SUCCESS => {
-                    self.index += 1;
+                    bb.set(&key, BlackboardValue::Int(0));
+                    return (status, combined_result);
                 }
             }
         }
 
-        self.index = 0;
-        NodeStatus::SUCCESS
+        // reset index
+        bb.set(&key, BlackboardValue::Int(0));
+        (NodeStatus::SUCCESS, combined_result)
     }
 }
 
@@ -64,46 +85,64 @@ This is your "Fallback" logic (e.g., "Try to Attack; if can't, Patrol").
 
 pub struct Selector {
     children: Vec<BoxBTNode>,
-    index: usize,
+    id: usize,
 }
 
 impl Selector {
     pub fn new(children: Vec<BoxBTNode>) -> Self {
-        Self { children, index: 0 }
+        Self { children, id: 0 }
     }
 }
 
 impl BTNode for Selector {
-    fn tick(
-        &mut self,
-        snapshot: &CharacterSnapshot,
-        blackboard: &Blackboard,
-        delta: f32,
-        out: &mut Vec<CharacterCommand>,
-    ) -> NodeStatus {
-        while self.index < self.children.len() {
-            let status = self.children[self.index].tick(snapshot, blackboard, delta, out);
+    fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn children_mut(&mut self) -> Option<&mut Vec<BoxBTNode>> {
+        Some(&mut self.children)
+    }
+
+    fn tick(&self, snapshot: &CharacterSnapshot, delta: f32) -> (NodeStatus, BTResult) {
+        let bb = &snapshot.blackboard;
+
+        let key = format!("{}.sel", self.id);
+
+        let mut index = match bb.get(&key) {
+            Some(BlackboardValue::Int(val)) => val as usize,
+            _ => 0,
+        };
+
+        while index < self.children.len() {
+            let (status, result) = self.children[index].tick(snapshot, delta);
 
             match status {
+                NodeStatus::FAILURE => {
+                    index += 1;
+                    continue;
+                }
                 NodeStatus::RUNNING => {
-                    return NodeStatus::RUNNING;
+                    bb.set(&key, BlackboardValue::Int(index as i32));
+                    return (NodeStatus::RUNNING, result);
                 }
                 NodeStatus::SUCCESS => {
-                    self.index = 0;
-
-                    return NodeStatus::SUCCESS;
-                }
-                NodeStatus::FAILURE => {
-                    self.index += 1;
+                    bb.set(&key, BlackboardValue::Int(0));
+                    return (NodeStatus::SUCCESS, result);
                 }
             }
         }
-        self.index = 0;
-        NodeStatus::FAILURE
+
+        // all failed
+        bb.set(&key, BlackboardValue::Int(0));
+        (NodeStatus::FAILURE, BTResult::empty())
     }
 
     fn reset(&mut self) {
-        self.index = 0;
+        //index= 0
         for child in &mut self.children {
             child.reset();
         }
