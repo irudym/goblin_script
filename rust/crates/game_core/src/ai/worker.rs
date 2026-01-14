@@ -40,10 +40,12 @@ pub fn init_bt_system() {
     JOB_TX.set(tx).ok();
     RESULT_MAP.set(Mutex::new(HashMap::new())).ok();
 
-    thread::spawn(move || {
+    let handle = thread::spawn(move || {
         log_debug!("Starting worker loop in the separate thread");
         worker_loop(rx, pool)
     });
+
+    log_debug!("Separated thread created: {:?}", &handle);
 }
 
 pub fn take_result(character_id: CharacterId) -> Option<BTResult> {
@@ -52,8 +54,8 @@ pub fn take_result(character_id: CharacterId) -> Option<BTResult> {
 }
 
 fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
+    log_debug!("WORKER_LOOP");
     loop {
-        log_debug!("WORKER_LOOP");
         // batch jobs for the current frame
         let mut jobs = Vec::new();
         while let Ok(job) = rx.try_recv() {
