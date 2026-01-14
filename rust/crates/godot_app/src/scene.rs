@@ -4,7 +4,9 @@ use platform::logger::LogType;
 
 use crate::godot_logger::GodotLogger;
 use platform::shared::logger_global::{init_logger, log};
-use platform::{log, log_info};
+use platform::{log, log_debug, log_info};
+
+use game_core::ai::worker::init_bt_system;
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -20,14 +22,14 @@ impl INode2D for Scene {
     }
 
     fn ready(&mut self) {
+        init_bt_system();
+
         // get list of children
+        /*
         let children = self.base().get_children();
-        log(
-            LogType::Info,
-            &format!("Children of the scene: {:?}", children),
-        );
+        log_info!("Children of the scene: {:?}", children);
         for node in children.iter_shared() {
-            log!(LogType::Info, "==>> Child: {}", &node.get_name());
+            log_info!("==>> Child: {}", &node.get_name());
             log_info!("==>> Child type: {}", &node.get_class());
             /*
             if let Ok(character) = node.try_cast::<Character>() {
@@ -35,6 +37,7 @@ impl INode2D for Scene {
             }
             */
         }
+        */
     }
 
     fn process(&mut self, _delta: f32) {

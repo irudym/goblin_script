@@ -9,6 +9,10 @@ use std::thread;
 use super::super::bt::job::BTJob;
 use num_cpus;
 
+use platform::log_debug;
+use platform::logger::LogType;
+use platform::shared::logger_global::log;
+
 /*
 lazy_static! {
     pub static ref JOB_TX: Sender<BTJob> = {
@@ -30,11 +34,16 @@ pub fn init_bt_system() {
         .build()
         .unwrap();
 
+    log_debug!("Thread pool created: {:?}", &pool);
+
     let (tx, rx) = unbounded::<BTJob>();
     JOB_TX.set(tx).ok();
     RESULT_MAP.set(Mutex::new(HashMap::new())).ok();
 
-    thread::spawn(move || worker_loop(rx, pool));
+    thread::spawn(move || {
+        log_debug!("Starting worker loop in the separate thread");
+        worker_loop(rx, pool)
+    });
 }
 
 pub fn take_result(character_id: CharacterId) -> Option<BTResult> {
@@ -44,6 +53,7 @@ pub fn take_result(character_id: CharacterId) -> Option<BTResult> {
 
 fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
     loop {
+        log_debug!("WORKER_LOOP");
         // batch jobs for the current frame
         let mut jobs = Vec::new();
         while let Ok(job) = rx.try_recv() {
@@ -55,7 +65,7 @@ fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
 
         if jobs.is_empty() {
             //avoid spinning hot, sleep a tiny bit
-            std::thread::sleep(std::time::Duration::from_micros(200));
+            std::thread::sleep(std::time::Duration::from_micros(100));
             continue;
         }
 

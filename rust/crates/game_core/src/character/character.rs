@@ -16,6 +16,7 @@ use platform::types::{Direction, Vector2D};
 use platform::Animator;
 use std::sync::{Arc, Mutex};
 
+use platform::log_debug;
 use platform::shared::logger_global::log;
 
 pub struct CharacterLogic {
@@ -216,7 +217,7 @@ impl CharacterLogic {
 
     // Process the command
     pub fn apply(&mut self, cmd: BTCommand) {
-        log(LogType::Debug, &format!("received command: {:?}", cmd));
+        log_debug!("received command: {:?}", cmd);
         use BTCommand::*;
         match cmd {
             ChangeState(state) => {
@@ -259,14 +260,11 @@ impl CharacterLogic {
         } else {
             None
         };
-        log(
-            LogType::Warn,
-            &format!(
-                "Character::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
-                self.direction,
-                state_type,
-                self.get_position()
-            ),
+        log_debug!(
+            "Character::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
+            self.direction,
+            state_type,
+            self.get_position()
         );
 
         self.tick_ai();

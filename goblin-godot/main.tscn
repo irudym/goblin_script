@@ -537,7 +537,6 @@ tile_set = ExtResource("2_0xm2m")
 position = Vector2(190, 80)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Skeleton"]
-position = Vector2(-17, -17)
 sprite_frames = SubResource("SpriteFrames_facbu")
 animation = &"turn_east_west"
 

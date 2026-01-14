@@ -12,6 +12,7 @@ use platform::types::Vector2D;
 
 use platform::shared::logger_global::log;
 
+use platform::{log, log_debug, log_info};
 use std::sync::Arc;
 
 #[derive(GodotClass)]
@@ -62,10 +63,7 @@ impl IArea2D for Character {
     }
 
     fn ready(&mut self) {
-        log(
-            LogType::Info,
-            &format!("Character {} loaded", self.base().get_name()),
-        );
+        log_info!("Character {} loaded", self.base().get_name());
         //self.snap_to_cell();
         self.base_mut().set_position(Vector2 { x: 0.0, y: 0.0 });
 
@@ -77,10 +75,11 @@ impl IArea2D for Character {
         //build BT tree
         let tree = self.build_tree();
 
-        init_bt_system();
+        //init_bt_system();
 
         let mut logic = CharacterLogic::new(1, animator);
         logic.bt = tree;
+
         self.logic = Some(logic);
     }
 
