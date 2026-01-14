@@ -1,7 +1,7 @@
 use crate::logger::{LogType, Logger};
 use std::sync::OnceLock;
 
-static LOGGER: OnceLock<Box<dyn Logger>> = OnceLock::new();
+pub static LOGGER: OnceLock<Box<dyn Logger>> = OnceLock::new();
 
 pub fn init_logger(logger: Box<dyn Logger>) {
     let _ = LOGGER.set(logger);

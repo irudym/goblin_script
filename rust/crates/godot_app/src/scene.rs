@@ -18,12 +18,11 @@ struct Scene {
 impl INode2D for Scene {
     fn init(base: Base<Node2D>) -> Self {
         init_logger(Box::new(GodotLogger));
+        init_bt_system();
         Self { base }
     }
 
     fn ready(&mut self) {
-        init_bt_system();
-
         // get list of children
         /*
         let children = self.base().get_children();
