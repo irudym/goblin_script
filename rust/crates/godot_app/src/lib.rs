@@ -3,8 +3,14 @@ mod godot_animator;
 mod godot_logger;
 mod scene;
 
+use game_core::ai::worker::init_bt_system;
 use godot::classes::{ITileMapLayer, TileMapLayer};
 use godot::prelude::*;
+
+use crate::godot_logger::GodotLogger;
+use platform::logger::LogType;
+use platform::shared::logger_global::init_logger;
+use platform::{log_info, Logger};
 
 struct GoblinExtension;
 
@@ -17,7 +23,7 @@ struct GroundMap {
 #[godot_api]
 impl ITileMapLayer for GroundMap {
     fn init(base: Base<TileMapLayer>) -> Self {
-        godot_print!("godot-rust initialized!"); // Prints to the Godot console
+        //godot_print!("godot-rust initialized!"); // Prints to the Godot console
 
         Self { base }
     }
@@ -29,4 +35,22 @@ impl ITileMapLayer for GroundMap {
 }
 
 #[gdextension]
-unsafe impl ExtensionLibrary for GoblinExtension {}
+unsafe impl ExtensionLibrary for GoblinExtension {
+    fn on_stage_init(stage: InitStage) {
+        godot_print!("on_stage_init: {:?}", stage);
+        match stage {
+            InitStage::Scene => {
+                godot_print!("godot-rust initialized!");
+                godot_print!("Initializing the Logger");
+
+                init_logger(Box::new(GodotLogger) as Box<dyn Logger + Send + Sync>);
+                log_info!("Logger is ready!");
+
+                log_info!("Initializing the AI system");
+                init_bt_system();
+                log_info!("AI System is ready!");
+            }
+            _ => (),
+        }
+    }
+}

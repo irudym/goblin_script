@@ -3,7 +3,6 @@ use godot::prelude::*;
 use platform::logger::LogType;
 
 use crate::godot_animator::GodotAnimator;
-use game_core::ai::worker::init_bt_system;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::{BTRef, BehaviourTree};
@@ -74,8 +73,6 @@ impl IArea2D for Character {
 
         //build BT tree
         let tree = self.build_tree();
-
-        //init_bt_system();
 
         let mut logic = CharacterLogic::new(1, animator);
         logic.bt = tree;

@@ -16,3 +16,6 @@ impl Logger for GodotLogger {
         godot_print!("{}: {}", prefix, msg);
     }
 }
+
+unsafe impl Send for GodotLogger {}
+unsafe impl Sync for GodotLogger {}

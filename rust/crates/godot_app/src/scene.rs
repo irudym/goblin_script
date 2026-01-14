@@ -1,12 +1,11 @@
+use game_core::ai::worker::init_bt_system;
 use godot::classes::{INode2D, Node2D};
 use godot::prelude::*;
 use platform::logger::LogType;
 
 use crate::godot_logger::GodotLogger;
-use platform::shared::logger_global::{init_logger, log};
+use platform::shared::logger_global::log;
 use platform::{log, log_debug, log_info};
-
-use game_core::ai::worker::init_bt_system;
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -17,8 +16,6 @@ struct Scene {
 #[godot_api]
 impl INode2D for Scene {
     fn init(base: Base<Node2D>) -> Self {
-        init_logger(Box::new(GodotLogger));
-        init_bt_system();
         Self { base }
     }
 

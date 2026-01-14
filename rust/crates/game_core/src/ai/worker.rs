@@ -40,6 +40,11 @@ pub fn init_bt_system() {
     JOB_TX.set(tx).ok();
     RESULT_MAP.set(Mutex::new(HashMap::new())).ok();
 
+    std::panic::set_hook(Box::new(|panic_info| {
+        log_debug!("PANIC in worker thread: {:?}", &panic_info);
+        eprintln!("PANIC in worker thread: {:?}", panic_info);
+    }));
+
     let handle = thread::spawn(move || {
         log_debug!("Starting worker loop in the separate thread");
         worker_loop(rx, pool)
@@ -54,7 +59,6 @@ pub fn take_result(character_id: CharacterId) -> Option<BTResult> {
 }
 
 fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
-    log_debug!("WORKER_LOOP");
     loop {
         // batch jobs for the current frame
         let mut jobs = Vec::new();

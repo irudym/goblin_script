@@ -1,7 +1,7 @@
 use crate::logger::{LogType, Logger};
 use std::sync::OnceLock;
 
-pub static LOGGER: OnceLock<Box<dyn Logger>> = OnceLock::new();
+pub static LOGGER: OnceLock<Box<dyn Logger + Send + Sync>> = OnceLock::new();
 
 pub fn init_logger(logger: Box<dyn Logger>) {
     let _ = LOGGER.set(logger);
@@ -17,7 +17,7 @@ pub fn log(level: LogType, msg: &str) {
 #[macro_export]
 macro_rules! log {
     ($level:expr, $($arg:tt)*) => {{
-        log($level, &format!($($arg)*));
+        $crate::shared::logger_global::log($level, &format!($($arg)*));
     }
     };
 }
