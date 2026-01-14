@@ -45,10 +45,7 @@ pub fn init_bt_system() {
         eprintln!("PANIC in worker thread: {:?}", panic_info);
     }));
 
-    let handle = thread::spawn(move || {
-        log_debug!("Starting worker loop in the separate thread");
-        worker_loop(rx, pool)
-    });
+    let handle = thread::spawn(move || worker_loop(rx, pool));
 
     log_debug!("Separated thread created: {:?}", &handle);
 }
