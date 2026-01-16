@@ -11,18 +11,6 @@ use num_cpus;
 
 use platform::log_debug;
 use platform::logger::LogType;
-use platform::shared::logger_global::log;
-
-/*
-lazy_static! {
-    pub static ref JOB_TX: Sender<BTJob> = {
-        let (tx, rx) = unbounded();
-        std::thread::spawn(move || worker_loop(rx));
-        tx
-    };
-    pub static ref RESULT_MAP: Mutex<HashMap<CharacterId, BTResult>> = Mutex::new(HashMap::new());
-}
-*/
 
 pub static JOB_TX: OnceLock<Sender<BTJob>> = OnceLock::new();
 static RESULT_MAP: OnceLock<Mutex<std::collections::HashMap<CharacterId, BTResult>>> =

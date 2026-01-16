@@ -3,10 +3,10 @@ use crate::bt::result::BTResult;
 use crate::bt::{blackboard::BlackboardValue, BTNode, NodeStatus};
 use crate::character::request::StateRequest;
 use crate::character::snapshot::CharacterSnapshot;
-use platform::logger::LogType;
-use platform::shared::logger_global::log;
+//use platform::logger::LogType;
+//use platform::shared::logger_global::log;
 use platform::types::{Direction, Vector2D};
-use platform::{log, log_debug, log_info};
+//use platform::{log, log_debug, log_info};
 
 pub struct FindTarget {
     target_key: String, // "target_pos"
@@ -217,12 +217,13 @@ impl BTNode for IsAtTarget {
 
         let dist = snapshot.position.distance_to(target_pos);
 
-        log_debug!(
+        /*log_debug!(
             "IsAtTarget: snapshot: {:?}, target_pos: {:?}, dist: {}",
             &snapshot,
             target_pos,
             dist
         );
+        */
 
         if dist <= self.threshold {
             (NodeStatus::SUCCESS, BTResult::empty())
