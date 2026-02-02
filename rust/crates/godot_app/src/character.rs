@@ -1,4 +1,5 @@
-use godot::classes::{AnimatedSprite2D, Area2D, IArea2D};
+use game_core::character::CharacterId;
+use godot::classes::{AnimatedSprite2D, Area2D, IArea2D, TileMapLayer};
 use godot::prelude::*;
 use platform::logger::LogType;
 
@@ -11,7 +12,7 @@ use platform::types::Vector2D;
 
 use platform::shared::logger_global::log;
 
-use platform::{log, log_debug, log_info};
+use platform::{log, log_debug, log_error, log_info};
 use std::sync::Arc;
 
 #[derive(GodotClass)]
@@ -37,12 +38,18 @@ impl Character {
         //       a. Patrol (Calculate next point if arrived)
         //       b. Wait (Visualize looking around)
         //   2. WalkToTarget (Keep moving to current target)
-        let route = vec![
-            Vector2D::new(0.0, 0.0),
-            Vector2D::new(5.0, 0.0), // Move 5 tiles East
-            Vector2D::new(5.0, 5.0), // Move 5 tiles South
-            Vector2D::new(0.0, 5.0), // Return home
-        ];
+        let route = if let Some(points) = self.get_patrol_point() {
+            points
+        } else {
+            vec![
+                Vector2D::new(0.0, 0.0),
+                Vector2D::new(5.0, 0.0), // Move 5 tiles East
+                Vector2D::new(5.0, 5.0), // Move 5 tiles South
+                Vector2D::new(0.0, 5.0), // Return home
+            ]
+        };
+
+        log_info!("Patrol points: {:?}", route);
 
         Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
@@ -53,6 +60,53 @@ impl Character {
             Box::new(MoveToTarget::new("target_pos")),
         ]))))
     }
+
+    fn get_id(&self) -> CharacterId {
+        let variant = self.base().get_meta("id");
+        let generated_id = self.base().get_name().hash_u32();
+
+        if variant.is_nil() {
+            return generated_id;
+        }
+
+        if let Ok(id) = variant.try_to::<i32>() {
+            id as u32
+        } else {
+            log_error!("Meta ID in not an Int");
+            generated_id
+        }
+    }
+
+    fn get_patrol_point(&self) -> Option<Vec<Vector2D>> {
+        let mut result = Vec::new();
+
+        let variant = self.base().get_meta("patrol");
+
+        if variant.is_nil() {
+            return None;
+        }
+
+        let array = match variant.try_to::<Array<Variant>>() {
+            Ok(arr) => arr,
+            Err(_) => {
+                log_error!("Meta 'patrol' is not an Array<Vector2i>");
+                return None;
+            }
+        };
+
+        for v in array.iter_shared() {
+            if let Ok(vec2i) = v.try_to::<Vector2i>() {
+                result.push(Vector2D {
+                    x: vec2i.x as f32,
+                    y: vec2i.y as f32,
+                });
+            } else {
+                log_error!("Meta 'patrol' contains non Vector2i value");
+            }
+        }
+
+        Some(result)
+    }
 }
 
 #[godot_api]
@@ -62,9 +116,10 @@ impl IArea2D for Character {
     }
 
     fn ready(&mut self) {
-        log_info!("Character {} loaded", self.base().get_name());
+        let name = self.base().get_name();
+        log_info!("Character {} loaded", &name);
+
         //self.snap_to_cell();
-        self.base_mut().set_position(Vector2 { x: 0.0, y: 0.0 });
 
         let sprite = self
             .base()
@@ -74,8 +129,15 @@ impl IArea2D for Character {
         //build BT tree
         let tree = self.build_tree();
 
-        let mut logic = CharacterLogic::new(1, animator);
+        //get id from meta
+        let id = self.get_id();
+        log_info!("Character[{}] id: {}", &name, id);
+
+        let mut logic = CharacterLogic::new(id, animator, 32.0);
         logic.bt = tree;
+        if let Some(points) = self.get_patrol_point() {
+            logic.set_cell_position(points[0].x as i32, points[0].y as i32);
+        }
 
         self.logic = Some(logic);
     }

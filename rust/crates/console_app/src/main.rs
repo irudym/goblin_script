@@ -30,10 +30,10 @@ fn main() {
 
     // test patrol
     let route = vec![
-        Vector2D::new(0.0, 0.0),
-        Vector2D::new(5.0, 0.0), // Move 5 tiles East
-        Vector2D::new(5.0, 5.0), // Move 5 tiles South
-        Vector2D::new(0.0, 5.0), // Return home
+        Vector2D::new(10.0, 10.0),
+        Vector2D::new(15.0, 10.0), // Move 5 tiles East
+        Vector2D::new(15.0, 25.0), // Move 5 tiles South
+        Vector2D::new(10.0, 25.0), // Return home
     ];
 
     log!(LogType::Info, "Patrol points: {:?}", route);
@@ -65,8 +65,9 @@ fn main() {
         Box::new(MoveToTarget::new("target_pos")),
     ]))));
 
-    let mut character = CharacterLogic::new(1, Box::new(animator));
+    let mut character = CharacterLogic::new(1, Box::new(animator), 32.0);
     character.bt = tree;
+    character.set_position(Vector2D { x: 320.0, y: 320.0 });
 
     // run 10 cycles
     for i in 0..500 {

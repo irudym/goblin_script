@@ -1,9 +1,10 @@
 use game_core::ai::worker::init_bt_system;
-use godot::classes::{INode2D, Node2D};
+use godot::classes::{INode2D, Node2D, TileMapLayer};
 use godot::prelude::*;
 use platform::logger::LogType;
 
 use crate::godot_logger::GodotLogger;
+use game_core::map::GameMap;
 use platform::shared::logger_global::log;
 use platform::{log, log_debug, log_info};
 
@@ -11,12 +12,16 @@ use platform::{log, log_debug, log_info};
 #[class(base=Node2D)]
 struct Scene {
     base: Base<Node2D>,
+    game_map: GameMap,
 }
 
 #[godot_api]
 impl INode2D for Scene {
     fn init(base: Base<Node2D>) -> Self {
-        Self { base }
+        Self {
+            base,
+            game_map: GameMap::new(20, 20),
+        }
     }
 
     fn ready(&mut self) {
@@ -34,6 +39,18 @@ impl INode2D for Scene {
             */
         }
         */
+        //let tilemap = self.base().get_node_as::<TileMapLayer>("TileMapGround");
+        //let map = tilemap.get_tile_map_data_as_array();
+        //let width = tilemap.
+        //
+
+        //log_debug!("Tilemap: {:?}", map);
+
+        let tilemap = self.base().get_node_as::<TileMapLayer>("logic_map");
+
+        let grid_pos = Vector2i::new(10, 10);
+        let world_pos = tilemap.map_to_local(grid_pos);
+        log_info!("Position: {:?}", world_pos);
     }
 
     fn process(&mut self, _delta: f32) {

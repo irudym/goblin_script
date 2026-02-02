@@ -46,7 +46,7 @@ fn main() {
     // test in main thread
     let mut characters: Vec<CharacterLogic> = (0..n_characters)
         .map(|i| {
-            let mut char = CharacterLogic::new(i, Box::new(DummyAnimator::new()));
+            let mut char = CharacterLogic::new(i, Box::new(DummyAnimator::new()), 32.0);
             char.bt = shared_tree.clone();
             char
         })

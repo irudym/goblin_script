@@ -7,6 +7,7 @@ pub mod ai;
 pub mod bt;
 pub mod character;
 pub mod fsm;
+pub mod map;
 
 /*
  * Public re-export

@@ -1,7 +1,7 @@
 use crate::bt::Blackboard;
 use platform::types::{Direction, Vector2D};
 
-pub type CharacterId = u64;
+pub type CharacterId = u32;
 
 #[derive(Clone, Debug)]
 pub struct CharacterSnapshot {

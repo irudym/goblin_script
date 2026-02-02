@@ -37,7 +37,7 @@ pub struct CharacterLogic {
 }
 
 impl CharacterLogic {
-    pub fn new(id: CharacterId, animator: Box<dyn Animator>) -> Self {
+    pub fn new(id: CharacterId, animator: Box<dyn Animator>, cell_size: f32) -> Self {
         log(LogType::Info, "Create struct CharacterLogic");
         Self {
             id,
@@ -46,7 +46,7 @@ impl CharacterLogic {
             state: None,
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
-            cell_size: 32.0,
+            cell_size,
             // pending_commands: Vec::new(),
             bt: Arc::new(BehaviourTree::default()),
             blackboard: Box::new(Blackboard::new()),
