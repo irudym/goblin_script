@@ -8,11 +8,25 @@ use game_core::map::GameMap;
 use platform::shared::logger_global::log;
 use platform::{log, log_debug, log_info};
 
+use game_core::map::{LogicCell, LogicMap};
+
+fn read_logic_cell(tilemap: &TileMapLayer, cell: Vector2i) -> Option<LogicCell> {
+    if let Some(tile_data) = tilemap.get_cell_tile_data(cell) {
+        Some(LogicCell {
+            walkable: tile_data.get_custom_data("walkable").to::<bool>(),
+            height: tile_data.get_custom_data("height").to::<i32>(),
+            is_step: tile_data.get_custom_data("step").to::<bool>(),
+        })
+    } else {
+        None
+    }
+}
+
 #[derive(GodotClass)]
 #[class(base=Node2D)]
 struct Scene {
     base: Base<Node2D>,
-    game_map: GameMap,
+    logic_map: LogicMap,
 }
 
 #[godot_api]
@@ -20,7 +34,7 @@ impl INode2D for Scene {
     fn init(base: Base<Node2D>) -> Self {
         Self {
             base,
-            game_map: GameMap::new(20, 20),
+            logic_map: LogicMap::new(20, 20),
         }
     }
 
@@ -39,18 +53,36 @@ impl INode2D for Scene {
             */
         }
         */
-        //let tilemap = self.base().get_node_as::<TileMapLayer>("TileMapGround");
-        //let map = tilemap.get_tile_map_data_as_array();
-        //let width = tilemap.
-        //
+        let logic_tilemap = self.base().get_node_as::<TileMapLayer>("logic_map");
 
-        //log_debug!("Tilemap: {:?}", map);
+        let used_rect = logic_tilemap.get_used_rect();
+        let width = used_rect.size.x as usize;
+        let height = used_rect.size.y as usize;
 
-        let tilemap = self.base().get_node_as::<TileMapLayer>("logic_map");
+        let origin_x = used_rect.position.x;
+        let origin_y = used_rect.position.y;
 
-        let grid_pos = Vector2i::new(10, 10);
-        let world_pos = tilemap.map_to_local(grid_pos);
-        log_info!("Position: {:?}", world_pos);
+        self.logic_map.set_size(width, height);
+
+        log_debug!(
+            "New map len: {}, width: {}, height: {}",
+            self.logic_map.get_data_len(),
+            width,
+            height
+        );
+
+        for y in 0..height {
+            for x in 0..width {
+                let cell = Vector2i::new(origin_x + x as i32, origin_y + y as i32);
+                let tile = read_logic_cell(&logic_tilemap, cell);
+
+                self.logic_map.set_cell(x, y, tile);
+            }
+        }
+
+        log_debug!("Tilemap: {}x{} => {:?}", width, height, self.logic_map);
+
+        //let tilemap = self.base().get_node_as::<TileMapLayer>("logic_map");
     }
 
     fn process(&mut self, _delta: f32) {
@@ -60,5 +92,6 @@ impl INode2D for Scene {
         //let mut character = char.bind_mut();
         //character.update_state(delta);
         //}
+        // check collision
     }
 }

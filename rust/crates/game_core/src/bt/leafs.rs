@@ -192,7 +192,7 @@ impl IsAtTarget {
     pub fn new(key: &str) -> Self {
         Self {
             target_key: key.to_string(),
-            threshold: 6.0,
+            threshold: 16.0,
             id: 0,
         }
     }
@@ -217,17 +217,43 @@ impl BTNode for IsAtTarget {
 
         let dist = snapshot.position.distance_to(target_pos);
 
-        /*log_debug!(
-            "IsAtTarget: snapshot: {:?}, target_pos: {:?}, dist: {}",
+        /*
+        log_debug!(
+            "IsAtTarget: snapshot: {:?}, target_pos: {:?}, dist: {}, direction: {:?}",
             &snapshot,
             target_pos,
-            dist
+            dist,
+            &snapshot.direction
         );
         */
 
+        //TODO: check if a character skipped the target (due to frames jump)
         if dist <= self.threshold {
             (NodeStatus::SUCCESS, BTResult::empty())
         } else {
+            //get direction
+            match snapshot.direction {
+                Direction::EAST => {
+                    if snapshot.position.x > target_pos.x {
+                        return (NodeStatus::SUCCESS, BTResult::empty());
+                    }
+                }
+                Direction::WEST => {
+                    if snapshot.position.x < target_pos.x {
+                        return (NodeStatus::SUCCESS, BTResult::empty());
+                    }
+                }
+                Direction::NORTH => {
+                    if snapshot.position.y < target_pos.y {
+                        return (NodeStatus::SUCCESS, BTResult::empty());
+                    }
+                }
+                Direction::SOUTH => {
+                    if snapshot.position.y > target_pos.y {
+                        return (NodeStatus::SUCCESS, BTResult::empty());
+                    }
+                }
+            }
             (NodeStatus::FAILURE, BTResult::empty())
         }
     }

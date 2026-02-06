@@ -119,8 +119,6 @@ impl IArea2D for Character {
         let name = self.base().get_name();
         log_info!("Character {} loaded", &name);
 
-        //self.snap_to_cell();
-
         let sprite = self
             .base()
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");

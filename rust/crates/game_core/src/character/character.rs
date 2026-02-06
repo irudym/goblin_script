@@ -12,6 +12,7 @@ use crate::fsm::FSM;
 use crate::fsm::{IdleState, RunState, TurnState, WalkState};
 use crate::StateType;
 use platform::logger::LogType;
+use platform::types::Vector2Di;
 use platform::types::{Direction, Vector2D};
 use platform::Animator;
 use std::sync::{Arc, Mutex};
@@ -34,6 +35,9 @@ pub struct CharacterLogic {
     pub id: CharacterId,
     pub bt: BTRef,
     pub blackboard: Box<Blackboard>,
+
+    current_cell: Vector2Di,
+    prev_cell: Vector2Di,
 }
 
 impl CharacterLogic {
@@ -50,6 +54,9 @@ impl CharacterLogic {
             // pending_commands: Vec::new(),
             bt: Arc::new(BehaviourTree::default()),
             blackboard: Box::new(Blackboard::new()),
+
+            current_cell: Vector2Di::new(0, 0),
+            prev_cell: Vector2Di::new(0, 0),
         }
     }
 
@@ -261,7 +268,8 @@ impl CharacterLogic {
             None
         };
         log_debug!(
-            "Character::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
+            "Character[{}]::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
+            self.id,
             self.direction,
             state_type,
             self.get_position()
