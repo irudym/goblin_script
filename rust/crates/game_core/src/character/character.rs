@@ -23,6 +23,7 @@ use platform::shared::logger_global::log;
 pub struct CharacterLogic {
     pub direction: Direction,
     pub speed: f32,
+    pub current_speed: f32,
     state: Option<Box<dyn FSM>>, // the active state machine, accessible only by Main Thread
 
     pending_request: Arc<Mutex<Option<StateRequest>>>, // the request buffer, thread safe
@@ -47,6 +48,7 @@ impl CharacterLogic {
             id,
             direction: Direction::SOUTH,
             speed: 100.0,
+            current_speed: 0.0,
             state: None,
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
@@ -102,6 +104,10 @@ impl CharacterLogic {
         }
     }
 
+    pub fn set_current_speed(&mut self, speed: f32) {
+        self.current_speed = speed;
+    }
+
     /*
      * Set and play animation by construction animation name using Character direction:
      * for example, animation is run, the direction is WEST, than animation name will be run_west
@@ -129,15 +135,13 @@ impl CharacterLogic {
      * Can be called from Input, Behaviour Tree, or other threads
      */
     pub fn request_state(&self, request: StateRequest) {
-        log(
-            LogType::Debug,
-            &format!(
-                "Character::request_state: {:?}, current direction: {}",
-                request, self.direction
-            ),
+        log_debug!(
+            "Character::request_state: {:?}, current direction: {}",
+            request,
+            self.direction
         );
         if let Ok(mut pending) = self.pending_request.lock() {
-            // "last wing strategy" - if multiple systems request a state in the same frame, the last one overrides
+            // "last win strategy" - if multiple systems request a state in the same frame, the last one overrides
             *pending = Some(request);
         }
     }
@@ -216,9 +220,10 @@ impl CharacterLogic {
             id: self.id,
             position: self.animator.get_position(),
             direction: self.direction.clone(),
-            velocity: self.speed * self.direction.to_vector(),
+            velocity: self.current_speed * self.direction.to_vector(),
             is_idle: self.is_idle(),
             blackboard: self.blackboard.clone(),
+            current_speed: self.current_speed,
         }
     }
 
@@ -279,6 +284,20 @@ impl CharacterLogic {
 
         // Process pending request
         self.handle_transitions();
+
+        if self.current_speed > 0.0 {
+            self.prev_cell = self.current_cell;
+
+            //update character position
+            let new_position =
+                self.get_position() + self.direction.to_vector() * self.current_speed * delta;
+            self.set_position(new_position);
+
+            //
+            //let new_cell = world_to_cell(new_position);
+            //self.current_cell = new_cell;
+            //
+        }
 
         // Update the current state
         if let Some(mut state) = self.state.take() {

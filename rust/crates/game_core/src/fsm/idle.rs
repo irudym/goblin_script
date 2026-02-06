@@ -25,6 +25,7 @@ impl FSM for IdleState {
     fn enter(&mut self, character: &mut CharacterLogic) {
         //godot_print!("Enter to IDLE state");
         character.play_animation_with_direction("stand");
+        character.set_current_speed(0.0);
     }
 
     fn exit(&self, _character: &mut CharacterLogic) {}

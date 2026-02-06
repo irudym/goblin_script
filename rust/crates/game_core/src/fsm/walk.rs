@@ -29,6 +29,7 @@ impl FSM for WalkState {
     }
 
     fn enter(&mut self, character: &mut CharacterLogic) {
+        character.set_current_speed(character.speed);
         character.play_animation_with_direction("run");
     }
 
@@ -39,7 +40,7 @@ impl FSM for WalkState {
 
         //use Godot's move toward method
         let new_pos = current_pos.move_toward(self.target, self.speed * delta);
-        character.set_position(new_pos);
+        //character.set_position(new_pos);
 
         if new_pos.approx_eq(&self.target) {
             self.can_exit = true;

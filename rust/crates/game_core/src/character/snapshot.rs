@@ -11,4 +11,5 @@ pub struct CharacterSnapshot {
     pub velocity: Vector2D,
     pub is_idle: bool,
     pub blackboard: Box<Blackboard>,
+    pub current_speed: f32,
 }

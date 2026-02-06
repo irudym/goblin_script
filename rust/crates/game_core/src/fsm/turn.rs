@@ -28,6 +28,7 @@ impl FSM for TurnState {
     }
 
     fn enter(&mut self, character: &mut CharacterLogic) {
+        character.set_current_speed(0.0);
         if self.target == character.direction {
             self.can_exit = true;
         } else {

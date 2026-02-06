@@ -26,10 +26,13 @@ impl FSM for RunState {
 
     fn enter(&mut self, character: &mut CharacterLogic) {
         character.play_animation_with_direction("run");
+        character.set_current_speed(character.speed);
     }
     fn exit(&self, _character: &mut CharacterLogic) {}
-    fn update(&mut self, delta: f32, character: &mut CharacterLogic) {
+
+    fn update(&mut self, _delta: f32, _character: &mut CharacterLogic) {
         // move to the direction
+        /*
         let current_pos = character.get_position();
 
         // get direction vector
@@ -37,6 +40,7 @@ impl FSM for RunState {
 
         let new_pos = direction_vector * character.speed * delta;
         character.set_position(current_pos + new_pos);
+        */
     }
 
     fn can_exit(&self) -> bool {

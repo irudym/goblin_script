@@ -61,6 +61,7 @@ fn main() {
             velocity: Vector2D { x: 0.0, y: 0.0 },
             is_idle: c.is_idle(),
             blackboard: Default::default(),
+            current_speed: 0.0,
         })
         .collect();
 
