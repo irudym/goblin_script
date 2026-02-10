@@ -294,7 +294,7 @@ impl CharacterLogic {
         self.handle_transitions();
 
         if self.current_speed > 0.0 {
-            self.prev_cell = self.current_cell;
+            // self.prev_cell = self.current_cell;
 
             //update character position
             let new_position =
