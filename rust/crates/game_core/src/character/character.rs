@@ -93,6 +93,14 @@ impl CharacterLogic {
         });
     }
 
+    //get character cell position in tile grid coordinates: I,J
+    pub fn get_cell_position(&self) -> Vector2Di {
+        let position = self.animator.get_global_position();
+        let i = (position.x / self.cell_size) as i32;
+        let j = (position.y / self.cell_size) as i32;
+        Vector2Di { x: i, y: j }
+    }
+
     pub fn set_cell_size(&mut self, size: f32) {
         self.cell_size = size;
     }
@@ -271,6 +279,7 @@ impl CharacterLogic {
         } else {
             None
         };
+
         log_debug!(
             "Character[{}]::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
             self.id,
@@ -298,13 +307,24 @@ impl CharacterLogic {
             //
         }
 
-        let pos = self.get_position();
+        let pos = self.get_cell_position();
 
-        let cell_x = (pos.x / 64.0) as i32;
-        let cell_y = (pos.y / 64.0) as i32;
+        log_debug!(
+            "Character[{}]: LogicMap => cell({},{}): is_walkable: {}",
+            self.id,
+            pos.x,
+            pos.y,
+            logic_map.is_walkable(pos.x, pos.y)
+        );
 
-        if !logic_map.is_walkable(cell_x, cell_y) {
-            log_debug!("Blocked cell: {}, {}", cell_x, cell_y);
+        if !logic_map.is_walkable(pos.x, pos.y) {
+            log_debug!(
+                "Character[{}]: move to the prev cell: ({}, {})",
+                self.id,
+                self.prev_cell.x,
+                self.prev_cell.y
+            );
+            self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
         }
 
         // Update the current state
@@ -315,5 +335,12 @@ impl CharacterLogic {
 
         // Update animation
         self.animator.process(delta);
+
+        self.prev_cell = self.get_cell_position();
+        log_debug!(
+            "Character[{}]: set prev cell: {:?}",
+            self.id,
+            &self.prev_cell
+        );
     }
 }

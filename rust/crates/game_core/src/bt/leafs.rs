@@ -136,11 +136,11 @@ pub struct NextWaypoint {
 }
 
 impl NextWaypoint {
-    pub fn new(waypoints: Vec<Vector2D>, key: &str) -> Self {
+    pub fn new(waypoints: Vec<Vector2D>, key: &str, tile_size: f32) -> Self {
         Self {
             waypoints,
             target_key: key.to_string(),
-            tile_size: 32.0,
+            tile_size,
             id: 0,
         }
     }

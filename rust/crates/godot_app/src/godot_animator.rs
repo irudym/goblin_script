@@ -35,5 +35,10 @@ impl Animator for GodotAnimator {
         Vector2D { x: pos.x, y: pos.y }
     }
 
+    fn get_global_position(&self) -> Vector2D {
+        let pos = self.sprite.get_global_position();
+        Vector2D { x: pos.x, y: pos.y }
+    }
+
     fn process(&mut self, _delta: f32) {}
 }

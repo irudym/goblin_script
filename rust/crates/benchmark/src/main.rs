@@ -184,6 +184,10 @@ impl Animator for DummyAnimator {
     fn get_position(&self) -> Vector2D {
         self.position
     }
+
+    fn get_global_position(&self) -> Vector2D {
+        self.position
+    }
 }
 
 struct DummyLogger;

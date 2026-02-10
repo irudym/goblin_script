@@ -22,6 +22,7 @@ pub struct Character {
     base: Base<Area2D>,
     logic: Option<CharacterLogic>,
     logic_map: Option<Arc<LogicMap>>,
+    tile_size: f32,
 }
 
 //#[godot_api]
@@ -61,8 +62,8 @@ impl Character {
 
         Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
-                Box::new(NextWaypoint::new(route, "target_pos")),
-                Box::new(Wait::new(0.32)),
+                Box::new(NextWaypoint::new(route, "target_pos", self.tile_size)),
+                Box::new(Wait::new(0.64)),
                 Box::new(IsAtTarget::new("target_pos")),
             ])),
             Box::new(MoveToTarget::new("target_pos")),
@@ -124,6 +125,7 @@ impl IArea2D for Character {
             base,
             logic: None,
             logic_map: None,
+            tile_size: 64.0,
         }
     }
 
@@ -143,7 +145,8 @@ impl IArea2D for Character {
         let id = self.get_id();
         log_info!("Character[{}] id: {}", &name, id);
 
-        let mut logic = CharacterLogic::new(id, animator, 32.0);
+        let mut logic = CharacterLogic::new(id, animator, self.tile_size);
+
         logic.bt = tree;
         if let Some(points) = self.get_patrol_point() {
             logic.set_cell_position(points[0].x as i32, points[0].y as i32);

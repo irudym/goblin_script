@@ -68,7 +68,7 @@ impl INode2D for Scene {
         let mut logic_map = LogicMap::new(width, height);
 
         log_debug!(
-            "New map len: {}, width: {}, height: {}",
+            "Logic Map len: {}, width: {}, height: {}",
             logic_map.get_data_len(),
             width,
             height
@@ -83,13 +83,13 @@ impl INode2D for Scene {
             }
         }
 
-        log_debug!("Tilemap: {}x{} => {:?}", width, height, logic_map);
-
         let logic_arc = Arc::new(logic_map);
         self.logic_map = Some(logic_arc.clone());
 
         // update logic map in Character
-        let children = self.base().get_children();
+        // get SortingNode2D, as it keeps all characters
+        let sorting_node = self.base().get_node_as::<Node2D>("SortingNode2D");
+        let children = sorting_node.get_children();
         for node in children.iter_shared() {
             log_info!("==>> Child: {}", &node.get_name());
             log_info!("==>> Child type: {}", &node.get_class());

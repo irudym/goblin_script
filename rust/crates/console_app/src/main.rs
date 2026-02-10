@@ -57,7 +57,7 @@ fn main() {
 
     let tree = Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
         Box::new(Sequence::new(vec![
-            Box::new(NextWaypoint::new(route, "target_pos")),
+            Box::new(NextWaypoint::new(route, "target_pos", 32.0)),
             //Box::new(IsAtTarget::new("target_pos")),
             Box::new(Wait::new(0.032)),
             Box::new(IsAtTarget::new("target_pos")),
