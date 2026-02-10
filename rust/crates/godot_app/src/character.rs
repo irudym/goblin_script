@@ -1,4 +1,5 @@
 use game_core::character::CharacterId;
+use game_core::map::LogicMap;
 use godot::classes::{AnimatedSprite2D, Area2D, IArea2D, TileMapLayer};
 use godot::prelude::*;
 use platform::logger::LogType;
@@ -20,9 +21,16 @@ use std::sync::Arc;
 pub struct Character {
     base: Base<Area2D>,
     logic: Option<CharacterLogic>,
+    logic_map: Option<Arc<LogicMap>>,
 }
 
+//#[godot_api]
 impl Character {
+    //#[func]
+    pub fn set_logic_map(&mut self, logic_map: Arc<LogicMap>) {
+        self.logic_map = Some(logic_map);
+    }
+
     // check if animation is still in process, keep out the switching to new animation
     fn build_tree(&self) -> BTRef {
         // test patrol
@@ -112,7 +120,11 @@ impl Character {
 #[godot_api]
 impl IArea2D for Character {
     fn init(base: Base<Area2D>) -> Self {
-        Character { base, logic: None }
+        Character {
+            base,
+            logic: None,
+            logic_map: None,
+        }
     }
 
     fn ready(&mut self) {
@@ -138,12 +150,18 @@ impl IArea2D for Character {
         }
 
         self.logic = Some(logic);
+
+        // let scene = (self.base().get_parent()).get_parent().unwrap();
+        // let scene = scene.cast::<Scene>();
     }
 
     fn process(&mut self, delta: f32) {
         if let Some(logic) = &mut self.logic {
-            logic.process(delta);
+            if let Some(logic_map) = &mut self.logic_map {
+                logic.process(delta, &logic_map);
+            }
         }
+
         /*
         // Handle input
         let input = Input::singleton();

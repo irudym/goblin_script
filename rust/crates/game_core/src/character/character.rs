@@ -20,6 +20,8 @@ use std::sync::{Arc, Mutex};
 use platform::log_debug;
 use platform::shared::logger_global::log;
 
+use crate::map::LogicMap;
+
 pub struct CharacterLogic {
     pub direction: Direction,
     pub speed: f32,
@@ -206,10 +208,7 @@ impl CharacterLogic {
             }
             old_state.exit(self);
         }
-        log(
-            LogType::Debug,
-            &format!("Enter to new state: {:?}", &new_state.get_type()),
-        );
+        log_debug!("Enter to new state: {:?}", &new_state.get_type());
         let mut next_state = new_state;
         next_state.enter(self);
         self.state = Some(next_state);
@@ -266,7 +265,7 @@ impl CharacterLogic {
         }
     }
 
-    pub fn process(&mut self, delta: f32) {
+    pub fn process(&mut self, delta: f32, logic_map: &Arc<LogicMap>) {
         let state_type = if let Some(state) = &self.state {
             Some(state.get_type())
         } else {
@@ -297,6 +296,15 @@ impl CharacterLogic {
             //let new_cell = world_to_cell(new_position);
             //self.current_cell = new_cell;
             //
+        }
+
+        let pos = self.get_position();
+
+        let cell_x = (pos.x / 64.0) as i32;
+        let cell_y = (pos.y / 64.0) as i32;
+
+        if !logic_map.is_walkable(cell_x, cell_y) {
+            log_debug!("Blocked cell: {}, {}", cell_x, cell_y);
         }
 
         // Update the current state

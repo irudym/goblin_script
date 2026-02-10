@@ -77,7 +77,7 @@ fn main() {
             "Character\nposition: {:?}",
             character.get_position(),
         );
-        character.process(0.016);
+        //character.process(0.016, &map);
         std::thread::sleep(Duration::from_millis(50));
     }
 }
