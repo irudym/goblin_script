@@ -74,6 +74,11 @@ impl INode2D for Scene {
             height
         );
 
+        let coord = logic_tilemap.map_to_local(Vector2i { x: 4, y: 4 });
+        let g_coord = logic_tilemap.to_global(coord);
+
+        log_debug!("Test coordinates: (4,4) -> {:?}", g_coord);
+
         for y in 0..height {
             for x in 0..width {
                 let cell = Vector2i::new(origin_x + x as i32, origin_y + y as i32);

@@ -174,7 +174,9 @@ impl BTNode for NextWaypoint {
 
         current_index = (current_index + 1) % self.waypoints.len();
 
-        let next_pos = self.waypoints[current_index] * self.tile_size;
+        // TODO: need to have an external function to calculate next position taking into account map tile size and current map coordinates (in case if scrolling).
+        let half_tile = Vector2D::new(self.tile_size / 2.0, self.tile_size / 2.0);
+        let next_pos = self.waypoints[current_index] * self.tile_size + half_tile;
         bb.set(&self.target_key, BlackboardValue::Vector(next_pos));
 
         bb.set(&key, BlackboardValue::Int(current_index as i32));

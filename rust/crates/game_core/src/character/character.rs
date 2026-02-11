@@ -67,14 +67,8 @@ impl CharacterLogic {
     // TODO: need to get the cell size as a parameter
     pub fn snap_to_cell(&mut self) {
         // get cell i,j
-        let position = self.get_position();
-        let i = f32::round(position.x / self.cell_size) as i32;
-        let j = f32::round(position.y / self.cell_size) as i32;
-
-        self.set_position(Vector2D {
-            x: (i as f32 * self.cell_size) as f32,
-            y: (j as f32 * self.cell_size) as f32,
-        });
+        let coord = self.get_cell_position();
+        self.set_cell_position(coord.x, coord.y);
     }
 
     pub fn get_position(&self) -> Vector2D {
@@ -88,8 +82,8 @@ impl CharacterLogic {
     // Set character position in tile grid coordinates: I,J
     pub fn set_cell_position(&mut self, i: i32, j: i32) {
         self.set_position(Vector2D {
-            x: (i as f32 * self.cell_size) as f32,
-            y: (j as f32 * self.cell_size) as f32,
+            x: i as f32 * self.cell_size + self.cell_size / 2.0,
+            y: j as f32 * self.cell_size + self.cell_size / 2.0,
         });
     }
 
