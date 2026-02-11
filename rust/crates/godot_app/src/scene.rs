@@ -1,12 +1,12 @@
-use std::ops::Deref;
-
-use game_core::ai::worker::init_bt_system;
 use godot::classes::{INode2D, Node2D, TileMapLayer};
 use godot::prelude::*;
 use platform::logger::LogType;
 
 use crate::character::Character;
+use crate::debug_overlay::DebugOverlay;
 use crate::godot_logger::GodotLogger;
+use crate::grid_overlay::GridOverlay;
+use godot::classes::Input;
 use platform::shared::logger_global::log;
 use platform::{log, log_debug, log_info};
 use std::sync::Arc;
@@ -104,6 +104,12 @@ impl INode2D for Scene {
             }
         }
 
+        let mut overlay = self.base().get_node_as::<DebugOverlay>("DebugOverlay");
+        overlay.bind_mut().set_logic_map(logic_arc.clone());
+
+        let mut grid_overlay = self.base().get_node_as::<GridOverlay>("GridOverlay");
+        grid_overlay.bind_mut().set_logic_map(logic_arc.clone());
+
         //let tilemap = self.base().get_node_as::<TileMapLayer>("logic_map");
     }
 
@@ -115,5 +121,16 @@ impl INode2D for Scene {
         //character.update_state(delta);
         //}
         // check collision
+        let input = Input::singleton();
+
+        if input.is_action_just_pressed("toggle_debug_overlay") {
+            let mut overlay = self.base().get_node_as::<DebugOverlay>("DebugOverlay");
+            overlay.bind_mut().toggle();
+        }
+
+        if input.is_action_just_pressed("toggle_grid_overlay") {
+            let mut overlay = self.base().get_node_as::<GridOverlay>("GridOverlay");
+            overlay.bind_mut().toggle();
+        }
     }
 }

@@ -8,8 +8,8 @@ pub struct LogicCell {
 #[derive(Debug, Clone)]
 pub struct LogicMap {
     map_data: Vec<Option<LogicCell>>,
-    width: usize,
-    height: usize,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl LogicMap {

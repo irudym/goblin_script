@@ -1128,6 +1128,8 @@ tile_set = ExtResource("3_w48qg")
 tile_map_data = PackedByteArray("AAAJAAsAAAAAAAAAAAAKAAsAAAABAAAAAAALAAsAAAACAAAAAAA=")
 tile_set = SubResource("TileSet_82xsv")
 
+[node name="GridOverlay" type="GridOverlay" parent="."]
+
 [node name="SortingNode2D" type="Node2D" parent="."]
 y_sort_enabled = true
 
@@ -1185,3 +1187,5 @@ animation = &"eat"
 autoplay = "eat"
 frame = 1
 frame_progress = 0.06185035
+
+[node name="DebugOverlay" type="DebugOverlay" parent="."]

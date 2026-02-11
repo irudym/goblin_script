@@ -31,3 +31,8 @@ To run stress test
 ```
 cargo run -p bench
 ```
+
+### In game control
+
+**Shift + D** - Show a debug overlay. 
+**Shift + G** - Show a grid overlay.

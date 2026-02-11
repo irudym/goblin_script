@@ -229,7 +229,7 @@ impl BTNode for IsAtTarget {
         );
         */
 
-        //TODO: check if a character skipped the target (due to frames jump)
+        //TODO: need to somehow correct a character coordinate
         if dist <= self.threshold {
             (NodeStatus::SUCCESS, BTResult::empty())
         } else {

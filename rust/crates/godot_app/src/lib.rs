@@ -1,6 +1,8 @@
 mod character;
+mod debug_overlay;
 mod godot_animator;
 mod godot_logger;
+mod grid_overlay;
 mod scene;
 
 use game_core::ai::worker::init_bt_system;

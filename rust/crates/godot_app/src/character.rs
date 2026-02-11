@@ -1,6 +1,6 @@
 use game_core::character::CharacterId;
 use game_core::map::LogicMap;
-use godot::classes::{AnimatedSprite2D, Area2D, IArea2D, TileMapLayer};
+use godot::classes::{AnimatedSprite2D, Area2D, IArea2D};
 use godot::prelude::*;
 use platform::logger::LogType;
 
@@ -11,7 +11,7 @@ use game_core::bt::{BTRef, BehaviourTree};
 use game_core::CharacterLogic;
 use platform::types::Vector2D;
 
-use platform::shared::logger_global::log;
+//use platform::shared::logger_global::log;
 
 use platform::{log, log_debug, log_error, log_info};
 use std::sync::Arc;
