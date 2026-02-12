@@ -1121,7 +1121,7 @@ tile_map_data = PackedByteArray("AAACAAEAAAAFAAAAAAABAAIAAAAAAAAAAAADAAEAAAAGAAA
 tile_set = ExtResource("3_w48qg")
 
 [node name="TileMapGroundLevel2" type="TileMapLayer" parent="."]
-tile_map_data = PackedByteArray("AAADAAwAAAAFAAQAAAAEAAwAAAAGAAQAAAAFAAwAAAAGAAQAAAAGAAwAAAAHAAQAAAAGAAsAAAAHAAMAAAAFAAoAAAAHAAAAAAAEAAoAAAAGAAAAAAADAAoAAAAGAAAAAAACAAsAAAAAAAUAAAADAAsAAAAFAAIAAAAEAAsAAAAGAAEAAAAFAAsAAAAGAAEAAAACAAoAAAAAAAQAAAA=")
+tile_map_data = PackedByteArray("AAADAAwAAAAFAAQAAAAEAAwAAAAGAAQAAAAFAAwAAAAGAAQAAAAGAAwAAAAHAAQAAAAGAAsAAAAHAAMAAAAFAAoAAAAHAAAAAAAEAAoAAAAGAAAAAAADAAoAAAAGAAAAAAACAAsAAAAAAAUAAAADAAsAAAAFAAIAAAAEAAsAAAAGAAIAAAAFAAsAAAAGAAIAAAACAAoAAAAAAAQAAAA=")
 tile_set = ExtResource("3_w48qg")
 
 [node name="TileMapDecor" type="TileMapLayer" parent="."]
@@ -1146,11 +1146,11 @@ tile_set = SubResource("TileSet_2cqfq")
 
 [node name="Goblin" type="Character" parent="SortingNode2D"]
 y_sort_enabled = true
-metadata/patrol = [Vector2i(4, 4), Vector2i(8, 4), Vector2i(8, 8), Vector2i(4, 8)]
+metadata/patrol = [Vector2i(1, 11), Vector2i(2, 11), Vector2i(2, 10), Vector2i(5, 10), Vector2i(5, 11), Vector2i(3, 11), Vector2i(3, 10), Vector2i(2, 10), Vector2i(2, 11)]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="SortingNode2D/Goblin"]
 y_sort_enabled = true
-position = Vector2(288, 288)
+position = Vector2(81, 745)
 sprite_frames = SubResource("SpriteFrames_wu3dr")
 animation = &"run_west"
 frame = 4

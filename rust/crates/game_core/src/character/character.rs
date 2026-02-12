@@ -39,7 +39,6 @@ pub struct CharacterLogic {
     pub bt: BTRef,
     pub blackboard: Box<Blackboard>,
 
-    current_cell: Vector2Di,
     prev_cell: Vector2Di,
 }
 
@@ -59,7 +58,6 @@ impl CharacterLogic {
             bt: Arc::new(BehaviourTree::default()),
             blackboard: Box::new(Blackboard::new()),
 
-            current_cell: Vector2Di::new(0, 0),
             prev_cell: Vector2Di::new(0, 0),
         }
     }
