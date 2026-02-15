@@ -86,6 +86,7 @@ impl CharacterLogic {
     }
 
     //get character cell position in tile grid coordinates: I,J
+    // DEPRECATED: use logic_map.get_cell_position(position: Vector2D)
     pub fn get_cell_position(&self) -> Vector2Di {
         let position = self.animator.get_global_position();
         let i = (position.x / self.cell_size) as i32;
@@ -273,11 +274,12 @@ impl CharacterLogic {
         };
 
         log_debug!(
-            "Character[{}]::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}",
+            "Character[{}]::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}\ncurrent_cell: {:?}",
             self.id,
             self.direction,
             state_type,
-            self.get_position()
+            self.get_position(),
+            self.get_cell_position(),
         );
 
         self.tick_ai();
@@ -319,6 +321,18 @@ impl CharacterLogic {
             self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
         }
 
+        //work on steps and ground heights
+        // if the current cell is lower step, then only possible transition is to the cell up, to the upper steps.
+        // Adjust Y coordinate, to make it look like the character going up
+        let prev_level = logic_map.get_cell_level(self.prev_cell.x, self.prev_cell.y);
+
+        //calculate the Y offset
+        if logic_map.is_step(self.get_cell_position()) {
+            let mut new_position = self.get_position();
+            new_position.y -= logic_map.get_step_y_offset(new_position);
+            self.set_position(new_position);
+        }
+
         // Update the current state
         if let Some(mut state) = self.state.take() {
             state.update(delta, self);
@@ -329,10 +343,5 @@ impl CharacterLogic {
         self.animator.process(delta);
 
         self.prev_cell = self.get_cell_position();
-        log_debug!(
-            "Character[{}]: set prev cell: {:?}",
-            self.id,
-            &self.prev_cell
-        );
     }
 }

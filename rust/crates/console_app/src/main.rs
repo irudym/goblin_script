@@ -1,5 +1,6 @@
 mod console_animator;
 mod console_logger;
+use game_core::map::LogicMap;
 use log::LevelFilter;
 
 use console_animator::ConsoleAnimator;
@@ -15,7 +16,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use platform::shared::logger_global::{init_logger, log};
-use platform::{log, log_info};
+use platform::{log_debug, log_info};
 
 fn main() {
     colog::basic_builder()
@@ -29,14 +30,18 @@ fn main() {
     let animator = ConsoleAnimator::new();
 
     // test patrol
+    /*
     let route = vec![
         Vector2D::new(10.0, 10.0),
         Vector2D::new(15.0, 10.0), // Move 5 tiles East
         Vector2D::new(15.0, 25.0), // Move 5 tiles South
         Vector2D::new(10.0, 25.0), // Return home
     ];
+    */
 
-    log!(LogType::Info, "Patrol points: {:?}", route);
+    let route = vec![Vector2D::new(1.0, 11.0), Vector2D::new(5.0, 10.0)];
+
+    log_info!("Patrol points: {:?}", route);
 
     init_bt_system();
 
@@ -57,7 +62,7 @@ fn main() {
 
     let tree = Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
         Box::new(Sequence::new(vec![
-            Box::new(NextWaypoint::new(route, "target_pos", 32.0)),
+            Box::new(NextWaypoint::new(route, "target_pos", 64.0)),
             //Box::new(IsAtTarget::new("target_pos")),
             Box::new(Wait::new(0.032)),
             Box::new(IsAtTarget::new("target_pos")),
@@ -65,19 +70,21 @@ fn main() {
         Box::new(MoveToTarget::new("target_pos")),
     ]))));
 
-    let mut character = CharacterLogic::new(1, Box::new(animator), 32.0);
+    let mut character = CharacterLogic::new(1, Box::new(animator), 64.0);
     character.bt = tree;
-    character.set_position(Vector2D { x: 320.0, y: 320.0 });
+    //character.set_position(Vector2D { x: 81.0, y: 745.0 });
+    character.set_cell_position(1, 11);
+
+    let logic_map = LogicMap::load_from_file("logic_map.ron").unwrap();
+    let arc_logic_map = Arc::new(logic_map);
 
     // run 10 cycles
-    for i in 0..500 {
-        log!(LogType::Info, "Cycle: {}", i);
-        log!(
-            LogType::Debug,
-            "Character\nposition: {:?}",
-            character.get_position(),
-        );
-        //character.process(0.016, &map);
+    for i in 0..200 {
+        log_info!("Cycle: {}", i);
+        log_debug!("Character\nposition: {:?}", character.get_position(),);
+
+        character.process(0.016, &arc_logic_map);
+
         std::thread::sleep(Duration::from_millis(50));
     }
 }

@@ -88,10 +88,12 @@ impl INode2D for Scene {
             }
         }
 
+        let _ = logic_map.save_to_file("logic_map.ron");
+
         let logic_arc = Arc::new(logic_map);
         self.logic_map = Some(logic_arc.clone());
 
-        // update logic map in Character
+        // update logic map in Characters
         // get SortingNode2D, as it keeps all characters
         let sorting_node = self.base().get_node_as::<Node2D>("SortingNode2D");
         let children = sorting_node.get_children();
