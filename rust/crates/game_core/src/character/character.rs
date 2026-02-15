@@ -266,6 +266,28 @@ impl CharacterLogic {
         }
     }
 
+    fn get_effective_velocity(&self, logic_map: &LogicMap) -> Vector2D {
+        let base = self.direction.to_vector() * self.current_speed;
+
+        if self.current_speed == 0.0 {
+            return base;
+        }
+
+        let cell = self.get_cell_position();
+        if !logic_map.is_step(cell) {
+            return base;
+        }
+
+        // On step tiles: east/west movement becomes diagonal
+        // Using (speed, -speed) preserves horizontal speed and matches
+        // the original offset formula where ΔY = ΔX
+        match self.direction {
+            Direction::EAST => Vector2D::new(self.current_speed, -self.current_speed),
+            Direction::WEST => Vector2D::new(-self.current_speed, self.current_speed),
+            _ => base,
+        }
+    }
+
     pub fn process(&mut self, delta: f32, logic_map: &Arc<LogicMap>) {
         let state_type = if let Some(state) = &self.state {
             Some(state.get_type())
@@ -288,17 +310,9 @@ impl CharacterLogic {
         self.handle_transitions();
 
         if self.current_speed > 0.0 {
-            // self.prev_cell = self.current_cell;
-
-            //update character position
-            let new_position =
-                self.get_position() + self.direction.to_vector() * self.current_speed * delta;
+            let velocity = self.get_effective_velocity(logic_map);
+            let new_position = self.get_position() + velocity * delta;
             self.set_position(new_position);
-
-            //
-            //let new_cell = world_to_cell(new_position);
-            //self.current_cell = new_cell;
-            //
         }
 
         let pos = self.get_cell_position();
@@ -323,23 +337,6 @@ impl CharacterLogic {
             self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
         }
 
-        //work on steps and ground heights
-        // if the current cell is lower step, then only possible transition is to the cell up, to the upper steps.
-        // Adjust Y coordinate, to make it look like the character going up
-        //calculate the Y offset
-        if logic_map.is_step(self.get_cell_position()) {
-            let mut new_position = self.get_position();
-            let offset = logic_map.get_step_y_offset(new_position);
-            new_position.y -= offset;
-            log_debug!(
-                "Character[{}]: offset: {}, new_position: {:?}",
-                self.id,
-                offset,
-                new_position
-            );
-            self.set_position(new_position);
-        }
-
         // Update the current state
         if let Some(mut state) = self.state.take() {
             state.update(delta, self);
@@ -350,5 +347,205 @@ impl CharacterLogic {
         self.animator.process(delta);
 
         self.prev_cell = self.get_cell_position();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ai::worker::init_bt_system;
+    use crate::map::logic_map::{LogicCell, LogicMap};
+    use platform::shared::logger_global::init_logger;
+    use platform::logger::{Logger, LogType};
+
+    static INIT: std::sync::Once = std::sync::Once::new();
+
+    fn ensure_init() {
+        INIT.call_once(|| {
+            struct NullLogger;
+            impl Logger for NullLogger {
+                fn log(&self, _: LogType, _: &str) {}
+            }
+            init_logger(Box::new(NullLogger));
+            init_bt_system();
+        });
+    }
+
+    struct TestAnimator {
+        position: Vector2D,
+        animation: String,
+        playing: bool,
+    }
+
+    impl TestAnimator {
+        fn new(position: Vector2D) -> Self {
+            Self {
+                position,
+                animation: String::new(),
+                playing: false,
+            }
+        }
+    }
+
+    impl Animator for TestAnimator {
+        fn play(&mut self, name: &str) {
+            self.animation = name.to_string();
+            self.playing = true;
+        }
+        fn is_playing(&self) -> bool {
+            self.playing
+        }
+        fn process(&mut self, _delta: f32) {}
+        fn set_position(&mut self, position: Vector2D) {
+            self.position = position;
+        }
+        fn get_position(&self) -> Vector2D {
+            self.position
+        }
+        fn get_global_position(&self) -> Vector2D {
+            self.position
+        }
+    }
+
+    /// 6×1 map for horizontal step traversal:
+    /// Col:  0        1        2        3        4        5
+    ///       flat,h=0 flat,h=0 step,h=0 step,h=1 flat,h=1 flat,h=1
+    fn make_test_map() -> Arc<LogicMap> {
+        let mut map = LogicMap::new(6, 1);
+        for i in 0..6 {
+            let (height, is_step) = match i {
+                2 => (0, true),
+                3 => (1, true),
+                4 | 5 => (1, false),
+                _ => (0, false),
+            };
+            map.set_cell(
+                i,
+                0,
+                Some(LogicCell {
+                    walkable: true,
+                    height,
+                    is_step,
+                }),
+            );
+        }
+        Arc::new(map)
+    }
+
+    fn make_character(cell_x: i32, cell_y: i32) -> CharacterLogic {
+        ensure_init();
+        let cell_size: f32 = 64.0;
+        let pos = Vector2D {
+            x: cell_x as f32 * cell_size + cell_size / 2.0,
+            y: cell_y as f32 * cell_size + cell_size / 2.0,
+        };
+        let mut ch = CharacterLogic::new(
+            cell_x as u32 * 1000 + cell_y as u32,
+            Box::new(TestAnimator::new(pos)),
+            cell_size,
+        );
+        ch.prev_cell = Vector2Di::new(cell_x, cell_y);
+        ch
+    }
+
+    // --- effective velocity tests ---
+
+    #[test]
+    fn test_effective_velocity_flat_ground_east() {
+        let map = make_test_map();
+        let mut ch = make_character(0, 0);
+        ch.direction = Direction::EAST;
+        ch.current_speed = 100.0;
+        let v = ch.get_effective_velocity(&map);
+        assert_eq!(v, Vector2D::new(100.0, 0.0));
+    }
+
+    #[test]
+    fn test_effective_velocity_step_east() {
+        let map = make_test_map();
+        let mut ch = make_character(2, 0);
+        ch.direction = Direction::EAST;
+        ch.current_speed = 100.0;
+        let v = ch.get_effective_velocity(&map);
+        assert_eq!(v, Vector2D::new(100.0, -100.0));
+    }
+
+    #[test]
+    fn test_effective_velocity_step_west() {
+        let map = make_test_map();
+        let mut ch = make_character(3, 0);
+        ch.direction = Direction::WEST;
+        ch.current_speed = 100.0;
+        let v = ch.get_effective_velocity(&map);
+        assert_eq!(v, Vector2D::new(-100.0, 100.0));
+    }
+
+    #[test]
+    fn test_effective_velocity_step_north() {
+        let map = make_test_map();
+        let mut ch = make_character(2, 0);
+        ch.direction = Direction::NORTH;
+        ch.current_speed = 100.0;
+        let v = ch.get_effective_velocity(&map);
+        // N/S on step tiles → no diagonal, just normal direction
+        assert_eq!(v, Vector2D::new(0.0, -100.0));
+    }
+
+    // --- process integration tests ---
+
+    #[test]
+    fn test_process_step_going_up() {
+        let map = make_test_map();
+        let mut ch = make_character(2, 0);
+        ch.direction = Direction::EAST;
+        ch.current_speed = 100.0;
+        ch.request_state(StateRequest::Run);
+
+        let start_pos = ch.get_position();
+        for _ in 0..3 {
+            ch.process(0.016, &map);
+        }
+        let end_pos = ch.get_position();
+
+        assert!(end_pos.x > start_pos.x, "X should increase going east");
+        assert!(end_pos.y < start_pos.y, "Y should decrease going up step");
+    }
+
+    #[test]
+    fn test_process_step_going_down() {
+        let map = make_test_map();
+        let mut ch = make_character(3, 0);
+        ch.direction = Direction::WEST;
+        ch.current_speed = 100.0;
+        ch.request_state(StateRequest::Run);
+
+        let start_pos = ch.get_position();
+        for _ in 0..3 {
+            ch.process(0.016, &map);
+        }
+        let end_pos = ch.get_position();
+
+        assert!(end_pos.x < start_pos.x, "X should decrease going west");
+        assert!(end_pos.y > start_pos.y, "Y should increase going down step");
+    }
+
+    #[test]
+    fn test_process_flat_ground_no_y_change() {
+        let map = make_test_map();
+        let mut ch = make_character(0, 0);
+        ch.direction = Direction::EAST;
+        ch.current_speed = 100.0;
+        ch.request_state(StateRequest::Run);
+
+        let start_y = ch.get_position().y;
+        for _ in 0..3 {
+            ch.process(0.016, &map);
+        }
+        let end_y = ch.get_position().y;
+
+        assert!(
+            (end_y - start_y).abs() < f32::EPSILON,
+            "Y should not change on flat ground"
+        );
     }
 }

@@ -46,15 +46,6 @@ impl LogicMap {
         }
     }
 
-    fn get_cell(&self, position: Vector2Di) -> Option<LogicCell> {
-        let offset = match self.get_data_offset(position.x, position.y) {
-            Some(val) => val,
-            None => return None,
-        };
-
-        return self.map_data[offset];
-    }
-
     pub fn is_walkable(&self, i: i32, j: i32) -> bool {
         let offset = match self.get_data_offset(i, j) {
             Some(val) => val,
@@ -70,7 +61,7 @@ impl LogicMap {
 
     // Returns difference between cell levels with coordinate cell1 and cell2
     pub fn cmp_levels(&self, cell1: Vector2Di, cell2: Vector2Di) -> i32 {
-        self.get_cell_level(cell2.x, cell2.y) - self.get_cell_level(cell1.x, cell2.y)
+        self.get_cell_level(cell2.x, cell2.y) - self.get_cell_level(cell1.x, cell1.y)
     }
 
     // Checks if it's possible to move from from_position to to_position
@@ -103,6 +94,28 @@ impl LogicMap {
         }
     }
 
+    /// Upper step: this step cell has another step cell below it (y+1)
+    pub fn is_upper_step(&self, coordinate: Vector2Di) -> bool {
+        if !self.is_step(coordinate) {
+            return false;
+        }
+        self.is_step(Vector2Di {
+            x: coordinate.x,
+            y: coordinate.y + 1,
+        })
+    }
+
+    /// Lower step: this step cell has another step cell above it (y-1)
+    pub fn is_lower_step(&self, coordinate: Vector2Di) -> bool {
+        if !self.is_step(coordinate) {
+            return false;
+        }
+        self.is_step(Vector2Di {
+            x: coordinate.x,
+            y: coordinate.y - 1,
+        })
+    }
+
     #[inline]
     fn get_data_offset(&self, i: i32, j: i32) -> Option<usize> {
         if i < 0 || j < 0 || i >= self.width as i32 || j >= self.height as i32 {
@@ -129,39 +142,6 @@ impl LogicMap {
         Vector2Di { x: i, y: j }
     }
 
-    fn get_cell_coordinates(&self, position: Vector2Di) -> Vector2D {
-        Vector2D {
-            x: position.x as f32 * self.cell_size,
-            y: position.y as f32 * self.cell_size,
-        }
-    }
-
-    pub fn get_step_y_offset(&self, position: Vector2D) -> f32 {
-        // get cell coordinates
-        let cell_position = self.get_cell_position(position);
-
-        // convert cell coordinates to screen coordinates
-        let cell_coordinates = self.get_cell_coordinates(cell_position);
-
-        match self.get_cell(Vector2Di {
-            x: cell_position.x,
-            y: cell_position.y + 1,
-        }) {
-            Some(cell) => {
-                if cell.is_step {
-                    //this is upper part, calculate the offset for the upper part of steps
-                    return position.y - cell_coordinates.y - self.cell_size - self.cell_size / 2.0
-                        + position.x
-                        - cell_coordinates.x;
-                }
-            }
-            None => (),
-        };
-
-        // offset for the lower part of the steps
-        position.y - (cell_coordinates.y + self.cell_size / 2.0 - position.x + cell_coordinates.x)
-    }
-
     pub fn save_to_file(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = File::create(filename)?;
 
@@ -180,5 +160,69 @@ impl LogicMap {
         let map: LogicMap = ron::from_str(&content)?;
 
         Ok(map)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Build a 6×3 map:
+    /// ```text
+    /// Row 0: flat(h=0) flat(h=0) step(h=0) step(h=1) flat(h=1) flat(h=1)
+    /// Row 1: flat(h=0) flat(h=0) step(h=0) step(h=1) flat(h=1) flat(h=1)
+    /// Row 2: flat(h=0) flat(h=0) flat(h=0) flat(h=0) flat(h=1) flat(h=1)
+    /// ```
+    fn make_step_map() -> LogicMap {
+        let mut map = LogicMap::new(6, 3);
+        for j in 0..3 {
+            for i in 0..6 {
+                let (height, is_step) = match (i, j) {
+                    (2, 0) | (2, 1) => (0, true),
+                    (3, 0) | (3, 1) => (1, true),
+                    (4, _) | (5, _) => (1, false),
+                    _ => (0, false),
+                };
+                map.set_cell(
+                    i,
+                    j,
+                    Some(LogicCell {
+                        walkable: true,
+                        height,
+                        is_step,
+                    }),
+                );
+            }
+        }
+        map
+    }
+
+    #[test]
+    fn test_is_upper_step() {
+        let map = make_step_map();
+        // Cell (2,0) is a step and has a step below at (2,1) → upper step
+        assert!(map.is_upper_step(Vector2Di::new(2, 0)));
+    }
+
+    #[test]
+    fn test_is_lower_step() {
+        let map = make_step_map();
+        // Cell (2,1) is a step and has a step above at (2,0) → lower step
+        assert!(map.is_lower_step(Vector2Di::new(2, 1)));
+    }
+
+    #[test]
+    fn test_is_upper_step_bottom_row() {
+        let map = make_step_map();
+        // Cell (2,1) has row 2 below it which is flat, not a step → not upper step
+        assert!(!map.is_upper_step(Vector2Di::new(2, 1)));
+    }
+
+    #[test]
+    fn test_non_step_returns_false() {
+        let map = make_step_map();
+        let flat = Vector2Di::new(0, 0);
+        assert!(!map.is_upper_step(flat));
+        assert!(!map.is_lower_step(flat));
     }
 }
