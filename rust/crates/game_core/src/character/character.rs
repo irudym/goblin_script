@@ -304,14 +304,16 @@ impl CharacterLogic {
         let pos = self.get_cell_position();
 
         log_debug!(
-            "Character[{}]: LogicMap => cell({},{}): is_walkable: {}",
+            "Character[{}]: LogicMap => cell({},{}) -move--> cell({},{}): is_walkable_from: {}",
             self.id,
+            self.prev_cell.x,
+            self.prev_cell.y,
             pos.x,
             pos.y,
-            logic_map.is_walkable(pos.x, pos.y)
+            logic_map.is_walkable_from(self.prev_cell, pos)
         );
 
-        if !logic_map.is_walkable(pos.x, pos.y) {
+        if !logic_map.is_walkable_from(self.prev_cell, pos) {
             log_debug!(
                 "Character[{}]: move to the prev cell: ({}, {})",
                 self.id,
@@ -329,7 +331,14 @@ impl CharacterLogic {
         //calculate the Y offset
         if logic_map.is_step(self.get_cell_position()) {
             let mut new_position = self.get_position();
-            new_position.y -= logic_map.get_step_y_offset(new_position);
+            let offset = logic_map.get_step_y_offset(new_position);
+            new_position.y -= offset;
+            log_debug!(
+                "Character[{}]: offset: {}, new_position: {:?}",
+                self.id,
+                offset,
+                new_position
+            );
             self.set_position(new_position);
         }
 

@@ -1,3 +1,6 @@
+use platform::log_debug;
+use platform::logger::LogType;
+
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
@@ -46,6 +49,15 @@ impl LogicMap {
         }
     }
 
+    fn get_cell(&self, position: Vector2Di) -> Option<LogicCell> {
+        let offset = match self.get_data_offset(position.x, position.y) {
+            Some(val) => val,
+            None => return None,
+        };
+
+        return self.map_data[offset];
+    }
+
     pub fn is_walkable(&self, i: i32, j: i32) -> bool {
         let offset = match self.get_data_offset(i, j) {
             Some(val) => val,
@@ -57,6 +69,28 @@ impl LogicMap {
         } else {
             false
         }
+    }
+
+    // Returns difference between cell levels with coordinate cell1 and cell2
+    pub fn cmp_levels(&self, cell1: Vector2Di, cell2: Vector2Di) -> i32 {
+        self.get_cell_level(cell2.x, cell2.y) - self.get_cell_level(cell1.x, cell2.y)
+    }
+
+    // Checks if it's possible to move from from_position to to_position
+    pub fn is_walkable_from(&self, from_position: Vector2Di, to_position: Vector2Di) -> bool {
+        if !self.is_walkable(to_position.x, to_position.y) {
+            return false;
+        }
+
+        if self.is_step(from_position) && self.is_step(to_position) {
+            return true;
+        }
+
+        if self.cmp_levels(from_position, to_position) != 0 {
+            return false;
+        }
+
+        true
     }
 
     pub fn is_step(&self, coordinate: Vector2Di) -> bool {
@@ -106,10 +140,29 @@ impl LogicMap {
     }
 
     pub fn get_step_y_offset(&self, position: Vector2D) -> f32 {
+        // get cell coordinates
         let cell_position = self.get_cell_position(position);
+
+        // convert cell coordinates to screen coordinates
         let cell_coordinates = self.get_cell_coordinates(cell_position);
 
-        position.x - cell_coordinates.x
+        match self.get_cell(Vector2Di {
+            x: cell_position.x,
+            y: cell_position.y + 1,
+        }) {
+            Some(cell) => {
+                if cell.is_step {
+                    //this is upper part, calculate the offset for the upper part of steps
+                    return position.y - cell_coordinates.y - self.cell_size - self.cell_size / 2.0
+                        + position.x
+                        - cell_coordinates.x;
+                }
+            }
+            None => (),
+        };
+
+        // offset for the lower part of the steps
+        position.y - (cell_coordinates.y + self.cell_size / 2.0 - position.x + cell_coordinates.x)
     }
 
     pub fn save_to_file(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {

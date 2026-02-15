@@ -1,8 +1,8 @@
 (
     map_data: [
         Some((
-            walkable: false,
-            height: 0,
+            walkable: true,
+            height: 1,
             is_step: false,
         )),
         None,
@@ -374,62 +374,10 @@
             height: 0,
             is_step: false,
         )),
-        None,
-        None,
         None,
         None,
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
         None,
         None,
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
         Some((
             walkable: true,
             height: 0,
@@ -450,25 +398,6 @@
             height: 0,
             is_step: false,
         )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        None,
-        Some((
-            walkable: true,
-            height: 0,
-            is_step: false,
-        )),
-        None,
-        None,
-        None,
         Some((
             walkable: true,
             height: 0,
@@ -513,13 +442,84 @@
         )),
         Some((
             walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        None,
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        None,
+        None,
+        None,
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        None,
+        None,
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 0,
+            is_step: true,
+        )),
+        Some((
+            walkable: true,
             height: 1,
             is_step: false,
         )),
         Some((
             walkable: true,
-            height: 0,
+            height: 1,
             is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 1,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 1,
+            is_step: false,
+        )),
+        Some((
+            walkable: true,
+            height: 1,
+            is_step: true,
         )),
         Some((
             walkable: true,
@@ -578,7 +578,7 @@
         Some((
             walkable: true,
             height: 0,
-            is_step: false,
+            is_step: true,
         )),
         Some((
             walkable: true,
@@ -760,8 +760,8 @@
         None,
         None,
         Some((
-            walkable: false,
-            height: 0,
+            walkable: true,
+            height: 1,
             is_step: false,
         )),
     ],

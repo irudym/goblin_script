@@ -3,10 +3,11 @@ use crate::bt::result::BTResult;
 use crate::bt::{blackboard::BlackboardValue, BTNode, NodeStatus};
 use crate::character::request::StateRequest;
 use crate::character::snapshot::CharacterSnapshot;
+//use platform::log_debug;
 //use platform::logger::LogType;
 //use platform::shared::logger_global::log;
 use platform::types::{Direction, Vector2D};
-//use platform::{log, log_debug, log_info};
+// use platform::{log, log_info};
 
 pub struct FindTarget {
     target_key: String, // "target_pos"
@@ -118,7 +119,7 @@ impl BTNode for MoveToTarget {
         //3. update FSM state
         if snapshot.direction != new_direction {
             //need to turn
-            commands.push(BTCommand::ChangeState(StateRequest::Turn(new_direction)))
+            commands.push(BTCommand::ChangeState(StateRequest::Turn(new_direction)));
         } else {
             //trigger run state
             commands.push(BTCommand::ChangeState(StateRequest::Run));
@@ -177,6 +178,7 @@ impl BTNode for NextWaypoint {
         // TODO: need to have an external function to calculate next position taking into account map tile size and current map coordinates (in case if scrolling).
         let half_tile = Vector2D::new(self.tile_size / 2.0, self.tile_size / 2.0);
         let next_pos = self.waypoints[current_index] * self.tile_size + half_tile;
+
         bb.set(&self.target_key, BlackboardValue::Vector(next_pos));
 
         bb.set(&key, BlackboardValue::Int(current_index as i32));
@@ -234,6 +236,8 @@ impl BTNode for IsAtTarget {
             (NodeStatus::SUCCESS, BTResult::empty())
         } else {
             //get direction
+            /*
+            log_debug!("[IsAtTarget]: direction: {}", snapshot.direction);
             match snapshot.direction {
                 Direction::EAST => {
                     if snapshot.position.x > target_pos.x {
@@ -256,6 +260,7 @@ impl BTNode for IsAtTarget {
                     }
                 }
             }
+            */
             (NodeStatus::FAILURE, BTResult::empty())
         }
     }

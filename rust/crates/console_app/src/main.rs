@@ -76,10 +76,15 @@ fn main() {
     character.set_cell_position(1, 11);
 
     let logic_map = LogicMap::load_from_file("logic_map.ron").unwrap();
+    let map_width = logic_map.width;
+    let map_height = logic_map.height;
+
     let arc_logic_map = Arc::new(logic_map);
 
+    log_info!("Logic map was loaded, size: {}x{}", map_width, map_height);
+
     // run 10 cycles
-    for i in 0..200 {
+    for i in 0..260 {
         log_info!("Cycle: {}", i);
         log_debug!("Character\nposition: {:?}", character.get_position(),);
 
