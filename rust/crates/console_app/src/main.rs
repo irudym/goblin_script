@@ -15,7 +15,7 @@ use platform::types::Vector2D;
 use std::sync::Arc;
 use std::time::Duration;
 
-use platform::shared::logger_global::{init_logger, log};
+use platform::shared::logger_global::init_logger;
 use platform::{log_debug, log_info};
 
 fn main() {

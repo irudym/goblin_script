@@ -17,7 +17,7 @@ use std::time::Instant;
 fn build_tree(route: Vec<Vector2D>) -> Arc<BehaviourTree> {
     Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
         Box::new(Sequence::new(vec![
-            Box::new(NextWaypoint::new(route.clone(), "target_pos")),
+            Box::new(NextWaypoint::new(route.clone(), "target_pos", 64.0)),
             Box::new(Wait::new(0.032)),
             Box::new(IsAtTarget::new("target_pos")),
         ])),

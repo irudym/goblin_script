@@ -326,8 +326,6 @@ impl CharacterLogic {
         //work on steps and ground heights
         // if the current cell is lower step, then only possible transition is to the cell up, to the upper steps.
         // Adjust Y coordinate, to make it look like the character going up
-        let prev_level = logic_map.get_cell_level(self.prev_cell.x, self.prev_cell.y);
-
         //calculate the Y offset
         if logic_map.is_step(self.get_cell_position()) {
             let mut new_position = self.get_position();

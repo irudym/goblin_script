@@ -4,11 +4,9 @@ use platform::logger::LogType;
 
 use crate::character::Character;
 use crate::debug_overlay::DebugOverlay;
-use crate::godot_logger::GodotLogger;
 use crate::grid_overlay::GridOverlay;
 use godot::classes::Input;
-use platform::shared::logger_global::log;
-use platform::{log, log_debug, log_info};
+use platform::{log_debug, log_info};
 use std::sync::Arc;
 
 use game_core::map::{LogicCell, LogicMap};

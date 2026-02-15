@@ -13,7 +13,7 @@ use platform::types::Vector2D;
 
 //use platform::shared::logger_global::log;
 
-use platform::{log, log_debug, log_error, log_info};
+use platform::{log_error, log_info};
 use std::sync::Arc;
 
 #[derive(GodotClass)]
