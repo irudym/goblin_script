@@ -2,7 +2,10 @@ use boa_engine::{Context, Source};
 
 use game_core::api::commands::PlayerCommand;
 
-use crate::{api::bindings::register_api, runtime::script_instance::ScriptInstance};
+use crate::{
+    api::bindings::register_api, runtime::script_instance::ScriptInstance,
+    vm::script_error::ScriptError,
+};
 
 const MAX_LOOP_ITERATIONS: u64 = 10_000;
 
@@ -11,7 +14,7 @@ pub struct ScriptVM {
 }
 
 impl ScriptVM {
-    pub fn new(code: &str) -> Self {
+    pub fn new(code: &str) -> Result<Self, ScriptError> {
         let mut ctx = Context::default();
 
         ctx.runtime_limits_mut()
@@ -20,21 +23,26 @@ impl ScriptVM {
         ctx.insert_data(ScriptInstance::default());
 
         register_api(&mut ctx);
-        ctx.eval(Source::from_bytes(code)).unwrap();
+        ctx.eval(Source::from_bytes(code))
+            .map_err(|e| ScriptError {
+                message: e.to_string(),
+            })?;
 
-        Self { ctx }
+        Ok(Self { ctx })
     }
 
-    pub fn tick(&mut self) -> Vec<PlayerCommand> {
-        if let Err(err) = self.ctx.eval(Source::from_bytes("update();")) {
-            eprintln!("JS error: {err}");
-            return vec![];
-        }
+    pub fn tick(&mut self) -> Result<Vec<PlayerCommand>, ScriptError> {
+        let _ = self
+            .ctx
+            .eval(Source::from_bytes("update();"))
+            .map_err(|e| ScriptError {
+                message: e.to_string(),
+            })?;
 
         if let Some(instance) = self.ctx.get_data::<ScriptInstance>() {
-            std::mem::take(&mut *instance.commands.borrow_mut())
+            Ok(std::mem::take(&mut *instance.commands.borrow_mut()))
         } else {
-            vec![]
+            Ok(vec![])
         }
     }
 }

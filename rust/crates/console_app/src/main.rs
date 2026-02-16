@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use platform::shared::logger_global::init_logger;
-use platform::{log_debug, log_info};
+use platform::{log_debug, log_error, log_info};
 
 fn main() {
     colog::basic_builder()
@@ -97,16 +97,23 @@ fn main() {
         }
     ";
 
-    let mut script = ScriptVM::new(script_code);
+    let mut script = match ScriptVM::new(script_code) {
+        Ok(vm) => vm,
+        Err(e) => {
+            log_error!("Cannot create JavaScript virtual machine: {}", e);
+            return;
+        }
+    };
 
     // run 10 cycles
     for i in 0..260 {
         log_info!("Cycle: {}", i);
         log_debug!("Character\nposition: {:?}", character.get_position());
 
-        let commands = script.tick();
-
-        log_info!("Got commands from script: {:?}", commands);
+        match script.tick() {
+            Ok(commands) => log_info!("Got commands from script: {:?}", commands),
+            Err(e) => log_info!("JavaScript execution error: {}", e),
+        }
 
         character.process(0.016, &arc_logic_map);
 
