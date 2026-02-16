@@ -4,6 +4,8 @@ use game_core::api::commands::PlayerCommand;
 
 use crate::{api::bindings::register_api, runtime::script_instance::ScriptInstance};
 
+const MAX_LOOP_ITERATIONS: u64 = 10_000;
+
 pub struct ScriptVM {
     ctx: Context,
 }
@@ -11,6 +13,9 @@ pub struct ScriptVM {
 impl ScriptVM {
     pub fn new(code: &str) -> Self {
         let mut ctx = Context::default();
+
+        ctx.runtime_limits_mut()
+            .set_loop_iteration_limit(MAX_LOOP_ITERATIONS);
 
         ctx.insert_data(ScriptInstance::default());
 
@@ -21,7 +26,11 @@ impl ScriptVM {
     }
 
     pub fn tick(&mut self) -> Vec<PlayerCommand> {
-        let _ = self.ctx.eval(Source::from_bytes("update();"));
+        if let Err(err) = self.ctx.eval(Source::from_bytes("update();")) {
+            eprintln!("JS error: {err}");
+            return vec![];
+        }
+
         if let Some(instance) = self.ctx.get_data::<ScriptInstance>() {
             std::mem::take(&mut *instance.commands.borrow_mut())
         } else {

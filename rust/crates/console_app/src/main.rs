@@ -87,9 +87,12 @@ fn main() {
     let script_code = r"
         step_right();
         step_right();
-        step_up();
+        for (let i = 0; i< 5; i++) {
+            step_up();
+        }
 
         function update() {
+            while(true) {}
             step_up();
         }
     ";
