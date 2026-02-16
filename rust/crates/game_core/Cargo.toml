@@ -7,6 +7,7 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
+boa_engine = "0.21.0"
 crossbeam = "0.8.4"
 lazy_static = "1.5.0"
 num_cpus = "1.17.0"
