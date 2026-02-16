@@ -5,4 +5,5 @@ pub struct BTJob {
     pub character_id: CharacterId,
     pub snapshot: CharacterSnapshot,
     pub bt: BTRef,
+    pub delta: f32,
 }

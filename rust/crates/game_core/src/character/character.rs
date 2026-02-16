@@ -255,12 +255,13 @@ impl CharacterLogic {
         }
     }
 
-    pub fn tick_ai(&mut self) {
+    pub fn tick_ai(&mut self, delta: f32) {
         if let Some(tx) = JOB_TX.get() {
             let _ = tx.send(BTJob {
                 character_id: self.id,
                 snapshot: self.snapshot(),
                 bt: self.bt.clone(),
+                delta,
             });
         }
 
@@ -319,7 +320,7 @@ impl CharacterLogic {
             self.get_cell_position(),
         );
 
-        self.tick_ai();
+        self.tick_ai(delta);
 
         // Process pending request
         self.handle_transitions();

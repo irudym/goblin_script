@@ -45,31 +45,37 @@ pub fn take_result(character_id: CharacterId) -> Option<BTResult> {
 
 fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
     loop {
-        // batch jobs for the current frame
-        let mut jobs = Vec::new();
-        while let Ok(job) = rx.try_recv() {
-            jobs.push(job);
-            if jobs.len() >= 32 {
-                break;
-            } //limit per batch
+        // block until the first job arrives (no CPU spin)
+        let first = match rx.recv() {
+            Ok(job) => job,
+            Err(_) => break, // channel closed, exit worker loop
+        };
+        let mut jobs = vec![first];
+
+        // drain any additional queued jobs up to batch limit
+        while jobs.len() < 32 {
+            match rx.try_recv() {
+                Ok(job) => jobs.push(job),
+                Err(_) => break,
+            }
         }
 
-        if jobs.is_empty() {
-            //avoid spinning hot, sleep a tiny bit
-            std::thread::sleep(std::time::Duration::from_micros(100));
-            continue;
-        }
-
-        // run all jobs in parallel
+        // run all jobs in parallel, collect results locally
+        let batch_results: Mutex<Vec<(CharacterId, BTResult)>> = Mutex::new(Vec::new());
         pool.scope(|scope| {
             for job in jobs.drain(..) {
+                let batch_results = &batch_results;
                 scope.spawn(move |_| {
-                    let result = job.bt.tick(&job.snapshot, 0.016);
-                    let mut map = RESULT_MAP.get().unwrap().lock().unwrap();
-
-                    map.insert(job.character_id, result);
+                    let result = job.bt.tick(&job.snapshot, job.delta);
+                    batch_results.lock().unwrap().push((job.character_id, result));
                 });
             }
-        })
+        });
+
+        // single bulk insert into the global result map
+        let mut map = RESULT_MAP.get().unwrap().lock().unwrap();
+        for (id, result) in batch_results.into_inner().unwrap() {
+            map.insert(id, result);
+        }
     }
 }
