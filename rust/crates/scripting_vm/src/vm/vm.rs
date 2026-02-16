@@ -24,9 +24,7 @@ impl ScriptVM {
 
         register_api(&mut ctx);
         ctx.eval(Source::from_bytes(code))
-            .map_err(|e| ScriptError {
-                message: e.to_string(),
-            })?;
+            .map_err(ScriptError::from_js_error)?;
 
         Ok(Self { ctx })
     }
@@ -35,9 +33,7 @@ impl ScriptVM {
         let _ = self
             .ctx
             .eval(Source::from_bytes("update();"))
-            .map_err(|e| ScriptError {
-                message: e.to_string(),
-            })?;
+            .map_err(ScriptError::from_js_error)?;
 
         if let Some(instance) = self.ctx.get_data::<ScriptInstance>() {
             Ok(std::mem::take(&mut *instance.commands.borrow_mut()))

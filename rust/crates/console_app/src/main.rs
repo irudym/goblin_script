@@ -86,13 +86,12 @@ fn main() {
 
     let script_code = r"
         step_right();
-        step_right();
+        step_right(
         for (let i = 0; i< 5; i++) {
             step_up();
         }
 
         function update() {
-            while(true) {}
             step_up();
         }
     ";
@@ -100,7 +99,7 @@ fn main() {
     let mut script = match ScriptVM::new(script_code) {
         Ok(vm) => vm,
         Err(e) => {
-            log_error!("Cannot create JavaScript virtual machine: {}", e);
+            log_error!("Cannot create JavaScript virtual machine: {} [line: {}, col: {}]", e, e.line, e.col);
             return;
         }
     };
@@ -112,7 +111,7 @@ fn main() {
 
         match script.tick() {
             Ok(commands) => log_info!("Got commands from script: {:?}", commands),
-            Err(e) => log_info!("JavaScript execution error: {}", e),
+            Err(e) => log_info!("JavaScript execution error: {} [line: {}, col: {}]", e, e.line, e.col),
         }
 
         character.process(0.016, &arc_logic_map);
