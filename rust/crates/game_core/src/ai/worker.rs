@@ -25,7 +25,9 @@ pub fn init_bt_system() {
     log_debug!("Thread pool created: {:?}", &pool);
 
     let (tx, rx) = unbounded::<BTJob>();
-    JOB_TX.set(tx).expect("init_bt_system called more than once");
+    JOB_TX
+        .set(tx)
+        .expect("init_bt_system called more than once");
     RESULT_MAP
         .set(Mutex::new(HashMap::new()))
         .expect("init_bt_system called more than once");
@@ -69,7 +71,10 @@ fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
                 let batch_results = &batch_results;
                 scope.spawn(move |_| {
                     let result = job.bt.tick(&job.snapshot, job.delta);
-                    batch_results.lock().unwrap().push((job.character_id, result));
+                    batch_results
+                        .lock()
+                        .unwrap()
+                        .push((job.character_id, result));
                 });
             }
         });

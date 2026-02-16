@@ -14,18 +14,9 @@ pub enum BlackboardValue {
     NodeState(NodeStatus),
 }
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Blackboard {
     data: Arc<RwLock<HashMap<String, BlackboardValue>>>,
-}
-
-impl Clone for Blackboard {
-    fn clone(&self) -> Self {
-        let cloned_data = self.data.read().unwrap().clone();
-        Self {
-            data: Arc::new(RwLock::new(cloned_data)),
-        }
-    }
 }
 
 impl Blackboard {
