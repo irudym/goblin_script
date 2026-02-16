@@ -315,6 +315,7 @@ dependencies = [
  "game_core",
  "log",
  "platform",
+ "scripting_vm",
 ]
 
 [[package]]
@@ -573,7 +574,6 @@ dependencies = [
 name = "game_core"
 version = "0.1.0"
 dependencies = [
- "boa_engine",
  "crossbeam",
  "lazy_static",
  "num_cpus",
@@ -1339,6 +1339,15 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "scripting_vm"
+version = "0.1.0"
+dependencies = [
+ "boa_engine",
+ "boa_gc",
+ "game_core",
+]
 
 [[package]]
 name = "semver"

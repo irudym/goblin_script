@@ -10,6 +10,7 @@ path = "src/main.rs"
 [dependencies]
 game_core = { path = "../game_core"}
 platform  = { path = "../platform" }
+scripting_vm = { path = "../scripting_vm" }
 colog = "1.4.0"
 colored = "3.0.0"
 env_logger = "0.11.8"

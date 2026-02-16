@@ -12,6 +12,7 @@ use game_core::bt::BehaviourTree;
 use game_core::CharacterLogic;
 use platform::logger::LogType;
 use platform::types::Vector2D;
+use scripting_vm::ScriptVM;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -83,10 +84,26 @@ fn main() {
 
     log_info!("Logic map was loaded, size: {}x{}", map_width, map_height);
 
+    let script_code = r"
+        step_right();
+        step_right();
+        step_up();
+
+        function update() {
+            step_up();
+        }
+    ";
+
+    let mut script = ScriptVM::new(script_code);
+
     // run 10 cycles
     for i in 0..260 {
         log_info!("Cycle: {}", i);
-        log_debug!("Character\nposition: {:?}", character.get_position(),);
+        log_debug!("Character\nposition: {:?}", character.get_position());
+
+        let commands = script.tick();
+
+        log_info!("Got commands from script: {:?}", commands);
 
         character.process(0.016, &arc_logic_map);
 
