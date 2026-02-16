@@ -25,8 +25,10 @@ pub fn init_bt_system() {
     log_debug!("Thread pool created: {:?}", &pool);
 
     let (tx, rx) = unbounded::<BTJob>();
-    JOB_TX.set(tx).ok();
-    RESULT_MAP.set(Mutex::new(HashMap::new())).ok();
+    JOB_TX.set(tx).expect("init_bt_system called more than once");
+    RESULT_MAP
+        .set(Mutex::new(HashMap::new()))
+        .expect("init_bt_system called more than once");
 
     std::panic::set_hook(Box::new(|panic_info| {
         log_debug!("PANIC in worker thread: {:?}", &panic_info);
