@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 use platform::log_debug;
 use platform::shared::logger_global::log;
 
-use crate::map::LogicMap;
+use crate::map::{LogicMap, StepType};
 
 pub struct CharacterLogic {
     pub direction: Direction,
@@ -77,12 +77,15 @@ impl CharacterLogic {
         self.animator.set_position(position);
     }
 
-    // Set character position in tile grid coordinates: I,J
-    pub fn set_cell_position(&mut self, i: i32, j: i32) {
+    // Set character position in tile grid coordinates: I,J, reset the prev_cell as well
+    pub fn set_cell_position(&mut self, i: i32, j: i32) -> Vector2Di {
         self.set_position(Vector2D {
             x: i as f32 * self.cell_size + self.cell_size / 2.0,
             y: j as f32 * self.cell_size + self.cell_size / 2.0,
         });
+        let position = Vector2Di { x: i, y: j };
+        self.prev_cell = position;
+        position
     }
 
     //get character cell position in tile grid coordinates: I,J
@@ -273,17 +276,29 @@ impl CharacterLogic {
             return base;
         }
 
-        let cell = self.get_cell_position();
-        if !logic_map.is_step(cell) {
-            return base;
-        }
+        let cell = logic_map.get_cell_position(self.get_position());
+
+        let step_type = logic_map.get_step_type(cell);
 
         // On step tiles: east/west movement becomes diagonal
         // Using (speed, -speed) preserves horizontal speed and matches
         // the original offset formula where ΔY = ΔX
-        match self.direction {
-            Direction::EAST => Vector2D::new(self.current_speed, -self.current_speed),
-            Direction::WEST => Vector2D::new(-self.current_speed, self.current_speed),
+        match (step_type, &self.direction) {
+            // Left steps: "/" slope — rises eastward
+            (StepType::Left, Direction::EAST) => {
+                Vector2D::new(self.current_speed, -self.current_speed)
+            }
+            (StepType::Left, Direction::WEST) => {
+                Vector2D::new(-self.current_speed, self.current_speed)
+            }
+            // Right steps: "\" slope — falls eastward
+            (StepType::Right, Direction::EAST) => {
+                Vector2D::new(self.current_speed, self.current_speed)
+            }
+            (StepType::Right, Direction::WEST) => {
+                Vector2D::new(-self.current_speed, -self.current_speed)
+            }
+            // No step or NORTH/SOUTH on steps: normal movement
             _ => base,
         }
     }
@@ -315,7 +330,7 @@ impl CharacterLogic {
             self.set_position(new_position);
         }
 
-        let pos = self.get_cell_position();
+        let mut pos = logic_map.get_cell_position(self.get_position());
 
         log_debug!(
             "Character[{}]: LogicMap => cell({},{}) -move--> cell({},{}): is_walkable_from: {}",
@@ -334,7 +349,7 @@ impl CharacterLogic {
                 self.prev_cell.x,
                 self.prev_cell.y
             );
-            self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
+            pos = self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
         }
 
         // Update the current state
@@ -346,7 +361,7 @@ impl CharacterLogic {
         // Update animation
         self.animator.process(delta);
 
-        self.prev_cell = self.get_cell_position();
+        self.prev_cell = pos;
     }
 }
 
@@ -355,8 +370,8 @@ mod tests {
     use super::*;
     use crate::ai::worker::init_bt_system;
     use crate::map::logic_map::{LogicCell, LogicMap};
+    use platform::logger::{LogType, Logger};
     use platform::shared::logger_global::init_logger;
-    use platform::logger::{Logger, LogType};
 
     static INIT: std::sync::Once = std::sync::Once::new();
 
@@ -413,11 +428,11 @@ mod tests {
     fn make_test_map() -> Arc<LogicMap> {
         let mut map = LogicMap::new(6, 1);
         for i in 0..6 {
-            let (height, is_step) = match i {
-                2 => (0, true),
-                3 => (1, true),
-                4 | 5 => (1, false),
-                _ => (0, false),
+            let (height, step_type) = match i {
+                2 => (0, StepType::Left),
+                3 => (1, StepType::Left),
+                4 | 5 => (1, StepType::None),
+                _ => (0, StepType::None),
             };
             map.set_cell(
                 i,
@@ -425,7 +440,7 @@ mod tests {
                 Some(LogicCell {
                     walkable: true,
                     height,
-                    is_step,
+                    step_type,
                 }),
             );
         }

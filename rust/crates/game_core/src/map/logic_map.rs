@@ -5,11 +5,18 @@ use std::io::Write;
 
 use platform::types::{Vector2D, Vector2Di};
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq)]
+pub enum StepType {
+    None,
+    Left,
+    Right,
+}
+
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct LogicCell {
     pub walkable: bool,
     pub height: i32,
-    pub is_step: bool,
+    pub step_type: StepType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,7 +77,9 @@ impl LogicMap {
             return false;
         }
 
-        if self.is_step(from_position) && self.is_step(to_position) {
+        if self.get_step_type(from_position) != StepType::None
+            && self.get_step_type(to_position) != StepType::None
+        {
             return true;
         }
 
@@ -81,40 +90,42 @@ impl LogicMap {
         true
     }
 
-    pub fn is_step(&self, coordinate: Vector2Di) -> bool {
+    pub fn get_step_type(&self, coordinate: Vector2Di) -> StepType {
         let offset = match self.get_data_offset(coordinate.x, coordinate.y) {
             Some(val) => val,
-            None => return false,
+            None => return StepType::None,
         };
 
         if let Some(cell) = self.map_data[offset] {
-            cell.is_step
+            cell.step_type
         } else {
-            false
+            StepType::None
         }
     }
 
-    /// Upper step: this step cell has another step cell below it (y+1)
-    pub fn is_upper_step(&self, coordinate: Vector2Di) -> bool {
-        if !self.is_step(coordinate) {
-            return false;
+    /* *
+        /// Upper step: this step cell has another step cell below it (y+1)
+        pub fn is_upper_step(&self, coordinate: Vector2Di) -> bool {
+            if !self.is_step(coordinate) {
+                return false;
+            }
+            self.is_step(Vector2Di {
+                x: coordinate.x,
+                y: coordinate.y + 1,
+            })
         }
-        self.is_step(Vector2Di {
-            x: coordinate.x,
-            y: coordinate.y + 1,
-        })
-    }
 
-    /// Lower step: this step cell has another step cell above it (y-1)
-    pub fn is_lower_step(&self, coordinate: Vector2Di) -> bool {
-        if !self.is_step(coordinate) {
-            return false;
+        /// Lower step: this step cell has another step cell above it (y-1)
+        pub fn is_lower_step(&self, coordinate: Vector2Di) -> bool {
+            if !self.is_step(coordinate) {
+                return false;
+            }
+            self.is_step(Vector2Di {
+                x: coordinate.x,
+                y: coordinate.y - 1,
+            })
         }
-        self.is_step(Vector2Di {
-            x: coordinate.x,
-            y: coordinate.y - 1,
-        })
-    }
+    */
 
     #[inline]
     fn get_data_offset(&self, i: i32, j: i32) -> Option<usize> {
@@ -177,11 +188,11 @@ mod tests {
         let mut map = LogicMap::new(6, 3);
         for j in 0..3 {
             for i in 0..6 {
-                let (height, is_step) = match (i, j) {
-                    (2, 0) | (2, 1) => (0, true),
-                    (3, 0) | (3, 1) => (1, true),
-                    (4, _) | (5, _) => (1, false),
-                    _ => (0, false),
+                let (height, step_type) = match (i, j) {
+                    (2, 0) | (2, 1) => (0, StepType::Left),
+                    (3, 0) | (3, 1) => (1, StepType::Left),
+                    (4, _) | (5, _) => (1, StepType::None),
+                    _ => (0, StepType::None),
                 };
                 map.set_cell(
                     i,
@@ -189,7 +200,7 @@ mod tests {
                     Some(LogicCell {
                         walkable: true,
                         height,
-                        is_step,
+                        step_type: step_type,
                     }),
                 );
             }
@@ -198,31 +209,9 @@ mod tests {
     }
 
     #[test]
-    fn test_is_upper_step() {
-        let map = make_step_map();
-        // Cell (2,0) is a step and has a step below at (2,1) → upper step
-        assert!(map.is_upper_step(Vector2Di::new(2, 0)));
-    }
-
-    #[test]
-    fn test_is_lower_step() {
-        let map = make_step_map();
-        // Cell (2,1) is a step and has a step above at (2,0) → lower step
-        assert!(map.is_lower_step(Vector2Di::new(2, 1)));
-    }
-
-    #[test]
-    fn test_is_upper_step_bottom_row() {
-        let map = make_step_map();
-        // Cell (2,1) has row 2 below it which is flat, not a step → not upper step
-        assert!(!map.is_upper_step(Vector2Di::new(2, 1)));
-    }
-
-    #[test]
     fn test_non_step_returns_false() {
         let map = make_step_map();
         let flat = Vector2Di::new(0, 0);
-        assert!(!map.is_upper_step(flat));
-        assert!(!map.is_lower_step(flat));
+        assert!(map.get_step_type(flat) == StepType::None);
     }
 }

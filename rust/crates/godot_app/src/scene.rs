@@ -9,14 +9,22 @@ use godot::classes::Input;
 use platform::{log_debug, log_info};
 use std::sync::Arc;
 
-use game_core::map::{LogicCell, LogicMap};
+use game_core::map::{LogicCell, LogicMap, StepType};
+
+fn get_step_type(step_type: &str) -> StepType {
+    match step_type {
+        "left" => StepType::Left,
+        "right" => StepType::Right,
+        _ => StepType::None,
+    }
+}
 
 fn read_logic_cell(tilemap: &TileMapLayer, cell: Vector2i) -> Option<LogicCell> {
     if let Some(tile_data) = tilemap.get_cell_tile_data(cell) {
         Some(LogicCell {
             walkable: tile_data.get_custom_data("walkable").to::<bool>(),
             height: tile_data.get_custom_data("height").to::<i32>(),
-            is_step: tile_data.get_custom_data("step").to::<bool>(),
+            step_type: get_step_type(&(tile_data.get_custom_data("step_type").to::<String>())),
         })
     } else {
         None
