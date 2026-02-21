@@ -2,12 +2,16 @@ use platform::log_debug;
 use platform::logger::LogType;
 
 use crate::StateRequest;
-use crate::{api::commands::PlayerCommand, map::LogicMap, CharacterLogic};
+use crate::{
+    api::commands::{ExecutionPlayerCommand, PlayerCommand},
+    map::LogicMap,
+    CharacterLogic,
+};
 use std::collections::VecDeque;
 use std::sync::Arc;
 
 pub struct CommandExecutor {
-    commands: VecDeque<PlayerCommand>,
+    commands: VecDeque<ExecutionPlayerCommand>,
 }
 
 impl CommandExecutor {
@@ -17,14 +21,23 @@ impl CommandExecutor {
         }
     }
 
+    /// Returns the source line number of the command currently being executed,
+    /// or 0 if the queue is empty.
+    pub fn current_line(&self) -> usize {
+        self.commands.front().map_or(0, |cmd| cmd.line)
+    }
+
     pub fn tick(&mut self, _delta: f32, character: &mut CharacterLogic, logic_map: &Arc<LogicMap>) {
-        let Some(cmd) = self.commands.front() else {
+        let Some(exec_cmd) = self.commands.front() else {
             return;
         };
 
+        let cmd = &exec_cmd.command;
+
         log_debug!(
-            "[CommandExecutor]: Current command: {:?} from commands: {:?}",
+            "[CommandExecutor]: Current command: {:?} (line {}) from commands: {:?}",
             cmd,
+            exec_cmd.line,
             self.commands
         );
 
@@ -62,7 +75,7 @@ impl CommandExecutor {
         }
     }
 
-    pub fn set_commands(&mut self, commands: Vec<PlayerCommand>) {
+    pub fn set_commands(&mut self, commands: Vec<ExecutionPlayerCommand>) {
         self.commands.extend(commands);
     }
 }

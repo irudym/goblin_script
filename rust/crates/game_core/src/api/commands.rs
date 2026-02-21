@@ -1,6 +1,12 @@
 use platform::types::Direction;
 
 #[derive(Debug, Clone, Copy)]
+pub struct ExecutionPlayerCommand {
+    pub command: PlayerCommand,
+    pub line: usize,
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum PlayerCommand {
     MoveNorth,
     MoveSouth,

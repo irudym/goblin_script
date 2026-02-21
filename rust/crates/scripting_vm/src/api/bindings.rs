@@ -39,4 +39,12 @@ pub fn register_api(ctx: &mut Context) {
     register_function(ctx, "step_left", PlayerCommand::MoveWest);
     register_function(ctx, "step_up", PlayerCommand::MoveNorth);
     register_function(ctx, "step_down", PlayerCommand::MoveSouth);
+
+    // Register __line(N) for source line tracking (inserted by preprocessor)
+    let line_fn = NativeFunction::from_fn_ptr(step_binding);
+    let line_func = FunctionObjectBuilder::new(ctx.realm(), line_fn)
+        .name("__line")
+        .length(1)
+        .build();
+    let _ = ctx.register_global_property(JsString::from("__line"), line_func, Attribute::all());
 }

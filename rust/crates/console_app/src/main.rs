@@ -156,7 +156,12 @@ fn main() {
         };
         */
 
+        let current_line = executor.current_line();
         executor.tick(0.016, &mut scripted_character, &arc_logic_map);
+
+        if current_line > 0 {
+            log_info!("Executing script line: {}", current_line);
+        }
 
         // character.process(0.016, &arc_logic_map);
         scripted_character.process(0.016, &arc_logic_map);
