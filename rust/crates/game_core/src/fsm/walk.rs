@@ -1,8 +1,6 @@
 use crate::character::request::StateRequest;
 use crate::fsm::{StateType, FSM};
 use crate::CharacterLogic;
-use platform::log_debug;
-use platform::logger::LogType;
 use platform::types::Vector2D;
 
 pub struct WalkState {
@@ -38,16 +36,12 @@ impl FSM for WalkState {
     fn update(&mut self, delta: f32, character: &mut CharacterLogic) {
         let current_pos = character.get_position();
 
-        //use Godot's move toward method
+        //use move toward method
         let new_pos = current_pos.move_toward(self.target, character.speed * delta);
         //character.set_position(new_pos);
 
         if new_pos.approx_eq(&self.target) {
             self.can_exit = true;
-            log_debug!(
-                "FSM::WalkState position {:?} reached, request IDLE",
-                self.target
-            );
             character.request_state(StateRequest::Idle);
         }
     }

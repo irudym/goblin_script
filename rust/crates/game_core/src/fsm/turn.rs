@@ -31,6 +31,7 @@ impl FSM for TurnState {
         character.set_current_speed(0.0);
         if self.target == character.direction {
             self.can_exit = true;
+            character.request_state(crate::StateRequest::Idle);
         } else {
             //start play turn animation to provided direction
             let animation = format!("turn_{}_{}", character.direction, self.target);

@@ -31,7 +31,10 @@ impl CommandExecutor {
         // get direction and compare with the current character direction
         if let Some(direction) = cmd.get_command_direction() {
             if direction != character.direction {
-                character.request_state(StateRequest::Idle);
+                // synchronously force WalkState→Idle before the Turn request is queued,
+                // avoiding the "last-win" overwrite and ensuring the Turn can be accepted
+                // from IdleState
+                let _ = character.try_transition(StateRequest::Idle);
                 character.request_state(StateRequest::Turn(direction));
                 return;
             }
