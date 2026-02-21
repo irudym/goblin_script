@@ -1,6 +1,6 @@
 use crate::CharacterLogic;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum StateType {
     RUN,
     TURN,

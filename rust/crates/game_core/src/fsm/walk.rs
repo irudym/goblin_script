@@ -1,6 +1,8 @@
 use crate::character::request::StateRequest;
 use crate::fsm::{StateType, FSM};
 use crate::CharacterLogic;
+use platform::log_debug;
+use platform::logger::LogType;
 use platform::types::Vector2D;
 
 pub struct WalkState {
@@ -32,8 +34,19 @@ impl FSM for WalkState {
         let direction = current_pos.direction_to(self.target);
 
         if direction != character.direction {
-            character.request_state(StateRequest::Idle);
-            character.request_state(StateRequest::Turn(direction));
+            match character.try_transition(StateRequest::Idle) {
+                Err(e) => {
+                    log_debug!("Error during transition to Idle: {}", e)
+                }
+                Ok(_) => (),
+            }
+            match character.try_transition(StateRequest::Turn(direction)) {
+                Err(e) => {
+                    log_debug!("Error during transition to Turn: {}", e)
+                }
+                Ok(_) => (),
+            }
+            log_debug!("try_transition to turn state: Turn({})", direction);
         } else {
             character.set_current_speed(character.speed);
             character.play_animation_with_direction("run");

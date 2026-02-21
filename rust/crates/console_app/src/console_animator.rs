@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use platform::log_debug;
 use platform::shared::logger_global::log;
 
 use platform::types::Vector2D;
@@ -43,7 +44,7 @@ impl Animator for ConsoleAnimator {
     }
 
     fn is_playing(&self) -> bool {
-        log(LogType::Debug, "is_playing called");
+        log_debug!("is_playing called");
         if let Some(anim) = self.frames.get(self.current_animation.as_str()) {
             if anim.1 {
                 log(LogType::Debug, "\ntrue");

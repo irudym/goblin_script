@@ -142,7 +142,8 @@ impl CharacterLogic {
      */
     pub fn request_state(&self, request: StateRequest) {
         log_debug!(
-            "Character::request_state: {:?}, current direction: {}",
+            "Character[{}]: Character::request_state: {:?}, current direction: {}",
+            self.id,
             request,
             self.direction
         );
@@ -171,7 +172,8 @@ impl CharacterLogic {
     /*
      * Transition logic with validation
      */
-    pub fn try_transition(&mut self, req: StateRequest) -> Result<(), ()> {
+    pub fn try_transition(&mut self, req: StateRequest) -> Result<(), String> {
+        log_debug!("Character[{}]: try_transition to {:?}", self.id, req);
         let can_exit = if let Some(val) = self.state.as_ref() {
             val.can_exit()
         } else {
@@ -195,7 +197,7 @@ impl CharacterLogic {
         //2. validate transition rules
         if !can_exit {
             // the state is locked
-            return Err(());
+            return Err("Cannot exit from the current state".to_string());
         }
 
         let new_state: Box<dyn FSM> = match req {
@@ -207,20 +209,31 @@ impl CharacterLogic {
 
         // perform the swap
         if let Some(old_state) = self.state.take() {
+            let state_type = &old_state.get_type();
             if !old_state.can_transition_to(target_type) {
                 self.state = Some(old_state);
-                return Err(());
+                return Err(format!(
+                    "Cannot make transition from {:?} to {:?}",
+                    state_type, target_type
+                ));
             }
             old_state.exit(self);
         }
         log_debug!(
-            "Character[{}]: Enter to new state: {:?}",
+            "Character[{}]: Entered to new state: {:?}",
             self.id,
             &new_state.get_type()
         );
+
         let mut next_state = new_state;
         next_state.enter(self);
+        log_debug!(
+            "Character[{}]: current state {:?}",
+            self.id,
+            &next_state.get_type()
+        );
         self.state = Some(next_state);
+
         Ok(())
     }
 
