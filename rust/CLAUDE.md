@@ -47,6 +47,8 @@ platform (traits + types)
     ↑
 game_core (logic)
     ↑
+scripting_vm
+    ↑
 console_app / godot_app / benchmark
 ```
 
@@ -75,6 +77,12 @@ Worker thread receives `BTJob`s via crossbeam channel, evaluates BTs in parallel
 ### Map System (`game_core/src/map/logic_map.rs`)
 
 `LogicMap` is a 2D grid of `LogicCell` (walkable, height, is_step). Serialized to/from RON format (`logic_map.ron` at project root). Validates character movement including step/height transitions.
+
+### Scripting System (`scripting_vm/src/vm/vm.rs`)
+
+ScriptVM loads and executes JavaScript string. 
+
+
 
 ## Key Patterns
 
