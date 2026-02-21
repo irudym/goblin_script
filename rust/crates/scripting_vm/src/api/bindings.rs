@@ -1,8 +1,9 @@
 use boa_engine::{
-    object::FunctionObjectBuilder, property::Attribute, Context, JsString, JsValue, NativeFunction,
+    object::FunctionObjectBuilder, property::Attribute, Context, JsResult, JsString, JsValue,
+    NativeFunction,
 };
 
-use crate::runtime::script_instance::ScriptInstance;
+use crate::{api::script_event::ScriptEvent, runtime::script_instance::ScriptInstance};
 use game_core::api::commands::PlayerCommand;
 
 fn register_function(ctx: &mut Context, name: &str, cmd: PlayerCommand) {
@@ -12,7 +13,7 @@ fn register_function(ctx: &mut Context, name: &str, cmd: PlayerCommand) {
                 .get_data::<ScriptInstance>()
                 .expect("ScriptInstance missing");
 
-            instance.commands.borrow_mut().push(cmd);
+            instance.events.borrow_mut().push(ScriptEvent::Command(cmd));
 
             Ok(JsValue::undefined())
         })
@@ -22,6 +23,15 @@ fn register_function(ctx: &mut Context, name: &str, cmd: PlayerCommand) {
     .build();
 
     let _ = ctx.register_global_property(JsString::from(name), func, Attribute::all());
+}
+
+fn step_binding(_this: &JsValue, args: &[JsValue], ctx: &mut Context) -> JsResult<JsValue> {
+    let line = args.get(0).and_then(|v| v.as_number()).unwrap_or(0.0) as usize;
+
+    let instance = ctx.get_data::<ScriptInstance>().unwrap();
+    instance.events.borrow_mut().push(ScriptEvent::Line(line));
+
+    Ok(JsValue::undefined())
 }
 
 pub fn register_api(ctx: &mut Context) {
