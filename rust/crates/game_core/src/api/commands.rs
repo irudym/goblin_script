@@ -9,3 +9,16 @@ pub enum PlayerCommand {
     Wait(f32),
     Move(Direction),
 }
+
+impl PlayerCommand {
+    pub fn get_command_direction(&self) -> Option<Direction> {
+        match self {
+            PlayerCommand::MoveNorth => Some(Direction::NORTH),
+            PlayerCommand::MoveSouth => Some(Direction::SOUTH),
+            PlayerCommand::MoveEast => Some(Direction::EAST),
+            PlayerCommand::MoveWest => Some(Direction::WEST),
+            PlayerCommand::Move(direction) => Some(*direction),
+            _ => None,
+        }
+    }
+}

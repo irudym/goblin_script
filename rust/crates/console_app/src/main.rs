@@ -86,9 +86,7 @@ fn main() {
     log_info!("Logic map was loaded, size: {}x{}", map_width, map_height);
 
     let script_code = r"
-        // step_right();
-        // step_right();
-        for (let i = 0; i< 5; i++) {
+        for (let i = 0; i< 3; i++) {
             step_up();
         }
 
@@ -134,10 +132,10 @@ fn main() {
     let mut executor = CommandExecutor::new();
     executor.set_commands(commands);
 
-    scripted_character.set_cell_position(5, 5);
+    scripted_character.set_cell_position(2, 6);
 
     // run 10 cycles
-    for i in 0..260 {
+    for i in 0..460 {
         log_info!("Cycle: {}", i);
 
         /*

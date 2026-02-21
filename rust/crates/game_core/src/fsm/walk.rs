@@ -29,28 +29,8 @@ impl FSM for WalkState {
     }
 
     fn enter(&mut self, character: &mut CharacterLogic) {
-        // get direction from target and current pos
-        let current_pos = character.get_position();
-        let direction = current_pos.direction_to(self.target);
-
-        if direction != character.direction {
-            match character.try_transition(StateRequest::Idle) {
-                Err(e) => {
-                    log_debug!("Error during transition to Idle: {}", e)
-                }
-                Ok(_) => (),
-            }
-            match character.try_transition(StateRequest::Turn(direction)) {
-                Err(e) => {
-                    log_debug!("Error during transition to Turn: {}", e)
-                }
-                Ok(_) => (),
-            }
-            log_debug!("try_transition to turn state: Turn({})", direction);
-        } else {
-            character.set_current_speed(character.speed);
-            character.play_animation_with_direction("run");
-        }
+        character.set_current_speed(character.speed);
+        character.play_animation_with_direction("run");
     }
 
     fn exit(&self, _character: &mut CharacterLogic) {}
@@ -64,6 +44,10 @@ impl FSM for WalkState {
 
         if new_pos.approx_eq(&self.target) {
             self.can_exit = true;
+            log_debug!(
+                "FSM::WalkState position {:?} reached, request IDLE",
+                self.target
+            );
             character.request_state(StateRequest::Idle);
         }
     }

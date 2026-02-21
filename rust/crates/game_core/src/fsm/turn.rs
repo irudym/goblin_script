@@ -1,6 +1,6 @@
 use super::{StateType, FSM};
 use crate::CharacterLogic;
-use platform::{log_debug, logger::LogType, types::Direction};
+use platform::types::Direction;
 
 pub struct TurnState {
     allowed_transition: Vec<StateType>,
@@ -42,13 +42,10 @@ impl FSM for TurnState {
     fn exit(&self, _character: &mut CharacterLogic) {}
 
     fn update(&mut self, _delta: f32, character: &mut CharacterLogic) {
-        log_debug!(
-            "FSM::TurnState::update: is_playing: {}",
-            character.is_animation_playing()
-        );
         // check if the turning animation is playing
         if !character.is_animation_playing() {
             self.can_exit = true;
+            character.request_state(crate::StateRequest::Idle);
         }
     }
 

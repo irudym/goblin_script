@@ -28,11 +28,28 @@ impl CommandExecutor {
             self.commands
         );
 
+        // get direction and compare with the current character direction
+        if let Some(direction) = cmd.get_command_direction() {
+            if direction != character.direction {
+                character.request_state(StateRequest::Idle);
+                character.request_state(StateRequest::Turn(direction));
+                return;
+            }
+        }
+
         match cmd {
             PlayerCommand::MoveNorth => {
                 // get character cell coordinates
                 let mut cell_position = character.get_cell_position();
                 cell_position.y -= 1;
+                let position = logic_map.get_screen_position(cell_position);
+                if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
+                    self.commands.pop_front();
+                }
+            }
+            PlayerCommand::MoveEast => {
+                let mut cell_position = character.get_cell_position();
+                cell_position.x += 1;
                 let position = logic_map.get_screen_position(cell_position);
                 if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
                     self.commands.pop_front();
