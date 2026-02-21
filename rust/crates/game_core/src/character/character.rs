@@ -43,7 +43,7 @@ pub struct CharacterLogic {
 }
 
 impl CharacterLogic {
-    pub fn new(id: CharacterId, animator: Box<dyn Animator>, cell_size: f32) -> Self {
+    pub fn new(id: CharacterId, animator: Box<dyn Animator>) -> Self {
         log(LogType::Info, "Create struct CharacterLogic");
         Self {
             id,
@@ -53,7 +53,7 @@ impl CharacterLogic {
             state: None,
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
-            cell_size,
+            cell_size: 64.0,
             // pending_commands: Vec::new(),
             bt: Arc::new(BehaviourTree::default()),
             blackboard: Box::new(Blackboard::new()),
@@ -164,23 +164,24 @@ impl CharacterLogic {
         };
 
         if let Some(req) = request_opt {
-            self.try_transition(req);
+            let _ = self.try_transition(req);
         }
     }
 
     /*
      * Transition logic with validation
      */
-    fn try_transition(&mut self, req: StateRequest) {
+    pub fn try_transition(&mut self, req: StateRequest) -> Result<(), ()> {
         let can_exit = if let Some(val) = self.state.as_ref() {
             val.can_exit()
         } else {
             true
         };
 
-        log(
-            LogType::Debug,
-            &format!("check if can exit from the current state: {}", can_exit),
+        log_debug!(
+            "Character[{}]: check if can exit from the current state: {}",
+            self.id,
+            can_exit
         );
 
         //1. Map request -> Target state type
@@ -194,7 +195,7 @@ impl CharacterLogic {
         //2. validate transition rules
         if !can_exit {
             // the state is locked
-            return;
+            return Err(());
         }
 
         let new_state: Box<dyn FSM> = match req {
@@ -208,14 +209,19 @@ impl CharacterLogic {
         if let Some(old_state) = self.state.take() {
             if !old_state.can_transition_to(target_type) {
                 self.state = Some(old_state);
-                return;
+                return Err(());
             }
             old_state.exit(self);
         }
-        log_debug!("Enter to new state: {:?}", &new_state.get_type());
+        log_debug!(
+            "Character[{}]: Enter to new state: {:?}",
+            self.id,
+            &new_state.get_type()
+        );
         let mut next_state = new_state;
         next_state.enter(self);
         self.state = Some(next_state);
+        Ok(())
     }
 
     pub fn snapshot(&self) -> CharacterSnapshot {
@@ -344,6 +350,8 @@ impl CharacterLogic {
         );
 
         if !logic_map.is_walkable_from(self.prev_cell, pos) {
+            // the character got to non walkable cell, set the position to the previous cell
+            // and set Idle state
             log_debug!(
                 "Character[{}]: move to the prev cell: ({}, {})",
                 self.id,
@@ -351,6 +359,8 @@ impl CharacterLogic {
                 self.prev_cell.y
             );
             pos = self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
+            // transfer to idle
+            self.request_state(StateRequest::Idle);
         }
 
         // Update the current state
@@ -458,7 +468,6 @@ mod tests {
         let mut ch = CharacterLogic::new(
             cell_x as u32 * 1000 + cell_y as u32,
             Box::new(TestAnimator::new(pos)),
-            cell_size,
         );
         ch.prev_cell = Vector2Di::new(cell_x, cell_y);
         ch

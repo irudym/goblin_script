@@ -11,6 +11,7 @@ const MAX_LOOP_ITERATIONS: u64 = 10_000;
 
 pub struct ScriptVM {
     ctx: Context,
+    code: String,
 }
 
 impl ScriptVM {
@@ -23,10 +24,28 @@ impl ScriptVM {
         ctx.insert_data(ScriptInstance::default());
 
         register_api(&mut ctx);
+        /*
         ctx.eval(Source::from_bytes(code))
             .map_err(ScriptError::from_js_error)?;
+        */
 
-        Ok(Self { ctx })
+        Ok(Self {
+            ctx,
+            code: code.to_string(),
+        })
+    }
+
+    pub fn run_script(&mut self) -> Result<Vec<PlayerCommand>, ScriptError> {
+        let _ = self
+            .ctx
+            .eval(Source::from_bytes(&self.code))
+            .map_err(ScriptError::from_js_error)?;
+
+        if let Some(instance) = self.ctx.get_data::<ScriptInstance>() {
+            Ok(std::mem::take(&mut *instance.commands.borrow_mut()))
+        } else {
+            Ok(vec![])
+        }
     }
 
     pub fn tick(&mut self) -> Result<Vec<PlayerCommand>, ScriptError> {

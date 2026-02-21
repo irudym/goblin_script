@@ -7,9 +7,8 @@ pub struct RunState {
 }
 
 impl RunState {
-    pub fn new(/*target: Vector2*/) -> Self {
+    pub fn new() -> Self {
         Self {
-            // target,
             allowed_transition: vec![StateType::IDLE],
         }
     }

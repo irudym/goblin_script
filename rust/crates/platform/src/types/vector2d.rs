@@ -1,5 +1,7 @@
 use std::ops::{Add, Mul, MulAssign, Sub};
 
+use crate::types::Direction;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector2D {
     pub x: f32,
@@ -30,6 +32,25 @@ impl Vector2D {
         let dy = self.y - other.y;
 
         (dx * dx + dy * dy).sqrt()
+    }
+
+    #[inline]
+    pub fn direction_to(self, target_pos: Self) -> Direction {
+        let direction_vector = (target_pos - self).normalized();
+
+        if direction_vector.x.abs() > direction_vector.y.abs() {
+            if direction_vector.x > 0.0 {
+                Direction::EAST
+            } else {
+                Direction::WEST
+            }
+        } else {
+            if direction_vector.y > 0.0 {
+                Direction::SOUTH
+            } else {
+                Direction::NORTH
+            }
+        }
     }
 
     #[inline]

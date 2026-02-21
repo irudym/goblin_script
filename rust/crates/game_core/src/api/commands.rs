@@ -1,8 +1,11 @@
+use platform::types::Direction;
+
 #[derive(Debug, Clone, Copy)]
 pub enum PlayerCommand {
     MoveNorth,
     MoveSouth,
     MoveEast,
     MoveWest,
-    Wait,
+    Wait(f32),
+    Move(Direction),
 }

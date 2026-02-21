@@ -1,7 +1,7 @@
 use crate::types::Vector2D;
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Copy)]
 pub enum Direction {
     NORTH,
     SOUTH,

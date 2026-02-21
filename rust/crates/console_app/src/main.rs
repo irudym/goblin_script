@@ -10,6 +10,7 @@ use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::BehaviourTree;
 use game_core::CharacterLogic;
+use game_core::CommandExecutor;
 use platform::logger::LogType;
 use platform::types::Vector2D;
 use scripting_vm::ScriptVM;
@@ -71,7 +72,7 @@ fn main() {
         Box::new(MoveToTarget::new("target_pos")),
     ]))));
 
-    let mut character = CharacterLogic::new(1, Box::new(animator), 64.0);
+    let mut character = CharacterLogic::new(1, Box::new(animator));
     character.bt = tree;
     //character.set_position(Vector2D { x: 81.0, y: 745.0 });
     character.set_cell_position(1, 11);
@@ -85,11 +86,13 @@ fn main() {
     log_info!("Logic map was loaded, size: {}x{}", map_width, map_height);
 
     let script_code = r"
-        step_right();
-        step_right(
+        // step_right();
+        // step_right();
         for (let i = 0; i< 5; i++) {
             step_up();
         }
+
+        step_right();
 
         function update() {
             step_up();
@@ -99,22 +102,66 @@ fn main() {
     let mut script = match ScriptVM::new(script_code) {
         Ok(vm) => vm,
         Err(e) => {
-            log_error!("Cannot create JavaScript virtual machine: {} [line: {}, col: {}]", e, e.line, e.col);
+            log_error!(
+                "Cannot create JavaScript virtual machine: {} [line: {}, col: {}]",
+                e,
+                e.line,
+                e.col
+            );
             return;
         }
     };
 
+    let scripted_animator = ConsoleAnimator::new();
+    let mut scripted_character = CharacterLogic::new(2, Box::new(scripted_animator));
+
+    let commands = match script.run_script() {
+        Ok(commands) => {
+            log_info!("Got commands from script: {:?}", commands);
+            commands
+        }
+        Err(e) => {
+            log_info!(
+                "JavaScript execution error: {} [line: {}, col: {}]",
+                e,
+                e.line,
+                e.col
+            );
+            vec![]
+        }
+    };
+
+    let mut executor = CommandExecutor::new();
+    executor.set_commands(commands);
+
+    scripted_character.set_cell_position(5, 5);
+
     // run 10 cycles
     for i in 0..260 {
         log_info!("Cycle: {}", i);
-        log_debug!("Character\nposition: {:?}", character.get_position());
 
-        match script.tick() {
-            Ok(commands) => log_info!("Got commands from script: {:?}", commands),
-            Err(e) => log_info!("JavaScript execution error: {} [line: {}, col: {}]", e, e.line, e.col),
-        }
+        /*
+        let commands = match script.tick() {
+            Ok(commands) => {
+                log_info!("Got commands from script: {:?}", commands);
+                commands
+            }
+            Err(e) => {
+                log_info!(
+                    "JavaScript execution error: {} [line: {}, col: {}]",
+                    e,
+                    e.line,
+                    e.col
+                );
+                vec![]
+            }
+        };
+        */
 
-        character.process(0.016, &arc_logic_map);
+        executor.tick(0.016, &mut scripted_character, &arc_logic_map);
+
+        // character.process(0.016, &arc_logic_map);
+        scripted_character.process(0.016, &arc_logic_map);
 
         std::thread::sleep(Duration::from_millis(50));
     }

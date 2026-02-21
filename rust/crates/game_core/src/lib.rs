@@ -7,6 +7,7 @@ pub mod ai;
 pub mod api;
 pub mod bt;
 pub mod character;
+pub mod executor;
 pub mod fsm;
 pub mod map;
 
@@ -22,3 +23,6 @@ pub use fsm::StateType;
 //Behaviour Tree
 pub use bt::BoxBTNode;
 pub use bt::NodeStatus;
+
+//CommandExecutor
+pub use executor::command_executor::CommandExecutor;

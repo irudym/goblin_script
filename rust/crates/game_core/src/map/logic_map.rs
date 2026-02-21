@@ -153,6 +153,12 @@ impl LogicMap {
         Vector2Di { x: i, y: j }
     }
 
+    pub fn get_screen_position(&self, cell_position: Vector2Di) -> Vector2D {
+        let x = cell_position.x as f32 * self.cell_size + self.cell_size / 2.0;
+        let y = cell_position.y as f32 * self.cell_size + self.cell_size / 2.0;
+        Vector2D { x, y }
+    }
+
     pub fn save_to_file(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = File::create(filename)?;
 

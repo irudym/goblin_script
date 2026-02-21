@@ -145,7 +145,7 @@ impl IArea2D for Character {
         let id = self.get_id();
         log_info!("Character[{}] id: {}", &name, id);
 
-        let mut logic = CharacterLogic::new(id, animator, self.tile_size);
+        let mut logic = CharacterLogic::new(id, animator);
 
         logic.bt = tree;
         if let Some(points) = self.get_patrol_point() {
