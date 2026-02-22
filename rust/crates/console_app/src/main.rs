@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use platform::shared::logger_global::init_logger;
-use platform::{log_debug, log_error, log_info};
+use platform::{log_error, log_info};
 
 fn main() {
     colog::basic_builder()
@@ -86,9 +86,12 @@ fn main() {
     log_info!("Logic map was loaded, size: {}x{}", map_width, map_height);
 
     let script_code = r"
-        for (let i = 0; i< 3; i++) {
-            step_up();
-        }
+        // for (let i = 0; i< 3; i++) {
+        //    step_up();
+        // }
+        step_up();
+        step_up();
+        step_up();
 
         step_right();
 
@@ -96,6 +99,8 @@ fn main() {
             step_up();
         }
     ";
+
+    log_info!("Script: {}", &script_code);
 
     let mut script = match ScriptVM::new(script_code) {
         Ok(vm) => vm,
@@ -132,7 +137,7 @@ fn main() {
     let mut executor = CommandExecutor::new();
     executor.set_commands(commands);
 
-    scripted_character.set_cell_position(2, 6);
+    scripted_character.set_cell_position(3, 3);
 
     // run 10 cycles
     for i in 0..460 {
@@ -158,6 +163,8 @@ fn main() {
 
         let current_line = executor.current_line();
         executor.tick(0.016, &mut scripted_character, &arc_logic_map);
+
+        log_info!("Current command: {:?}", executor.get_current_command());
 
         if current_line > 0 {
             log_info!("Executing script line: {}", current_line);

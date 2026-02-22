@@ -12,12 +12,14 @@ use std::sync::Arc;
 
 pub struct CommandExecutor {
     commands: VecDeque<ExecutionPlayerCommand>,
+    current: Option<ExecutionPlayerCommand>,
 }
 
 impl CommandExecutor {
     pub fn new() -> Self {
         CommandExecutor {
             commands: VecDeque::new(),
+            current: None,
         }
     }
 
@@ -28,6 +30,12 @@ impl CommandExecutor {
     }
 
     pub fn tick(&mut self, _delta: f32, character: &mut CharacterLogic, logic_map: &Arc<LogicMap>) {
+        // Proceed to the next command only after the character executed the previous one and came
+        // to Idle state
+        if !character.is_idle() {
+            return;
+        }
+
         let Some(exec_cmd) = self.commands.front() else {
             return;
         };
@@ -35,7 +43,7 @@ impl CommandExecutor {
         let cmd = &exec_cmd.command;
 
         log_debug!(
-            "[CommandExecutor]: Current command: {:?} (line {}) from commands: {:?}",
+            "[CommandExecutor]: Command: {:?} (line {}) from commands: {:?}",
             cmd,
             exec_cmd.line,
             self.commands
@@ -49,6 +57,7 @@ impl CommandExecutor {
                 // from IdleState
                 let _ = character.try_transition(StateRequest::Idle);
                 character.request_state(StateRequest::Turn(direction));
+                self.current = Some(*exec_cmd);
                 return;
             }
         }
@@ -60,7 +69,7 @@ impl CommandExecutor {
                 cell_position.y -= 1;
                 let position = logic_map.get_screen_position(cell_position);
                 if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
-                    self.commands.pop_front();
+                    self.current = self.commands.pop_front();
                 }
             }
             PlayerCommand::MoveEast => {
@@ -68,7 +77,7 @@ impl CommandExecutor {
                 cell_position.x += 1;
                 let position = logic_map.get_screen_position(cell_position);
                 if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
-                    self.commands.pop_front();
+                    self.current = self.commands.pop_front();
                 }
             }
             _ => todo!(),
@@ -77,5 +86,9 @@ impl CommandExecutor {
 
     pub fn set_commands(&mut self, commands: Vec<ExecutionPlayerCommand>) {
         self.commands.extend(commands);
+    }
+
+    pub fn get_current_command(&self) -> Option<ExecutionPlayerCommand> {
+        self.current
     }
 }

@@ -237,6 +237,25 @@ impl CharacterLogic {
         Ok(())
     }
 
+    // Set the state without validations
+    // Can be used to switch character to Idle state
+    pub fn force_transition(&mut self, req: StateRequest) {
+        let mut new_state: Box<dyn FSM> = match req {
+            StateRequest::Idle => Box::new(IdleState::new()),
+            StateRequest::Run => Box::new(RunState::new()),
+            StateRequest::Turn(direction) => Box::new(TurnState::new(direction)),
+            StateRequest::WalkTo(target) => Box::new(WalkState::new(target)),
+        };
+
+        // perform the swap
+        if let Some(old_state) = self.state.take() {
+            old_state.exit(self);
+        }
+
+        new_state.enter(self);
+        self.state = Some(new_state);
+    }
+
     pub fn snapshot(&self) -> CharacterSnapshot {
         CharacterSnapshot {
             id: self.id,
@@ -366,14 +385,14 @@ impl CharacterLogic {
             // the character got to non walkable cell, set the position to the previous cell
             // and set Idle state
             log_debug!(
-                "Character[{}]: move to the prev cell: ({}, {})",
+                "Character[{}]: got to non-walkable cell, move to the prev cell: ({}, {})",
                 self.id,
                 self.prev_cell.x,
                 self.prev_cell.y
             );
             pos = self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
             // transfer to idle
-            self.request_state(StateRequest::Idle);
+            let _ = self.force_transition(StateRequest::Idle);
         }
 
         // Update the current state

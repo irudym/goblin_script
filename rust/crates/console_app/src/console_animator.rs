@@ -38,27 +38,22 @@ impl ConsoleAnimator {
 
 impl Animator for ConsoleAnimator {
     fn play(&mut self, name: &str) {
-        log(LogType::Info, &format!("Start playing animation: {}", name));
+        log_debug!("Start playing animation: {}", name);
         self.current_animation = name.to_string();
         self.current_frame = 0;
     }
 
     fn is_playing(&self) -> bool {
-        log_debug!("is_playing called");
         if let Some(anim) = self.frames.get(self.current_animation.as_str()) {
             if anim.1 {
-                log(LogType::Debug, "\ntrue");
                 return true;
             }
             if self.current_frame >= anim.0 {
-                log(LogType::Debug, "\nfalse");
                 return false;
             } else {
-                log(LogType::Debug, "\ntrue");
                 return true;
             }
         }
-        log(LogType::Debug, "\nfalse");
         false
     }
 
