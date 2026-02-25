@@ -50,12 +50,7 @@ impl Character {
         let route = if let Some(points) = self.get_patrol_point() {
             points
         } else {
-            vec![
-                Vector2D::new(0.0, 0.0),
-                Vector2D::new(5.0, 0.0), // Move 5 tiles East
-                Vector2D::new(5.0, 5.0), // Move 5 tiles South
-                Vector2D::new(0.0, 5.0), // Return home
-            ]
+            vec![]
         };
 
         log_info!("Patrol points: {:?}", route);
@@ -136,6 +131,7 @@ impl IArea2D for Character {
         let sprite = self
             .base()
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
+        let position = sprite.get_position();
         let animator = Box::new(GodotAnimator::new(sprite));
 
         //build BT tree
@@ -146,6 +142,13 @@ impl IArea2D for Character {
         log_info!("Character[{}] id: {}", &name, id);
 
         let mut logic = CharacterLogic::new(id, animator);
+
+        //set current coordinate, update start_cell value
+        logic.set_position(Vector2D {
+            x: position.x,
+            y: position.y,
+        });
+        logic.start_cell = logic.snap_to_cell();
 
         logic.bt = tree;
         if let Some(points) = self.get_patrol_point() {

@@ -40,6 +40,7 @@ pub struct CharacterLogic {
     pub blackboard: Box<Blackboard>,
 
     prev_cell: Vector2Di,
+    pub start_cell: Vector2Di, // initial coordinates, used during level reset.
 }
 
 impl CharacterLogic {
@@ -53,20 +54,24 @@ impl CharacterLogic {
             state: None,
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
-            cell_size: 64.0,
+            cell_size: 64.0, // TODO: need to use LogicMap for that.
             // pending_commands: Vec::new(),
             bt: Arc::new(BehaviourTree::default()),
             blackboard: Box::new(Blackboard::new()),
 
             prev_cell: Vector2Di::new(0, 0),
+            start_cell: Vector2Di::new(0, 0),
         }
     }
 
     // TODO: need to get the cell size as a parameter
-    pub fn snap_to_cell(&mut self) {
+    // Snap the character to the cell coordinates
+    // Return new cell coordinates
+    pub fn snap_to_cell(&mut self) -> Vector2Di {
         // get cell i,j
         let coord = self.get_cell_position();
         self.set_cell_position(coord.x, coord.y);
+        coord
     }
 
     pub fn get_position(&self) -> Vector2D {

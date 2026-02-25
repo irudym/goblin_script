@@ -9,4 +9,5 @@ crate-type = ["cdylib"]
 [dependencies]
 game_core = { path = "../game_core" }
 platform  = { path = "../platform" }
+scripting_vm = { path = "../scripting_vm" }
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }

@@ -1,12 +1,16 @@
-use godot::classes::{INode2D, Node2D, TileMapLayer};
+use game_core::executor::ExecutorResult;
+use game_core::CommandExecutor;
+use godot::classes::{CodeEdit, INode2D, Node2D, TextureButton, TileMapLayer};
 use godot::prelude::*;
 use platform::logger::LogType;
 
 use crate::character::Character;
 use crate::debug_overlay::DebugOverlay;
 use crate::grid_overlay::GridOverlay;
+use crate::scripted_character::ScriptedCharacter;
 use godot::classes::Input;
 use platform::{log_debug, log_info};
+use scripting_vm::ScriptVM;
 use std::sync::Arc;
 
 use game_core::map::{LogicCell, LogicMap, StepType};
@@ -36,6 +40,41 @@ fn read_logic_cell(tilemap: &TileMapLayer, cell: Vector2i) -> Option<LogicCell> 
 struct Scene {
     base: Base<Node2D>,
     logic_map: Option<Arc<LogicMap>>,
+    code_editor: Option<Gd<CodeEdit>>,
+    scripted_character: Option<Gd<ScriptedCharacter>>,
+    executor: CommandExecutor,
+}
+
+#[godot_api]
+impl Scene {
+    #[func]
+    fn on_run_pressed(&mut self) {
+        log_debug!("Run button pressed!");
+
+        if let Some(editor) = &self.code_editor {
+            let text = editor.get_text();
+            self.run_script(text.to_string());
+        }
+    }
+
+    fn run_script(&mut self, code: String) {
+        log_debug!("Run script: {}", &code);
+
+        match ScriptVM::new(&code) {
+            Ok(mut vm) => match vm.run_script() {
+                Ok(commands) => {
+                    log_debug!("Commands: {:?}", commands);
+                    self.executor.set_commands(commands);
+                }
+                Err(e) => {
+                    log_debug!("Script error: {:?}", e);
+                }
+            },
+            Err(e) => {
+                log_debug!("Failed to create VM: {:?}", e);
+            }
+        }
+    }
 }
 
 #[godot_api]
@@ -44,6 +83,9 @@ impl INode2D for Scene {
         Self {
             base,
             logic_map: None,
+            code_editor: None,
+            scripted_character: None,
+            executor: CommandExecutor::new(),
         }
     }
 
@@ -107,8 +149,14 @@ impl INode2D for Scene {
             log_info!("==>> Child: {}", &node.get_name());
             log_info!("==>> Child type: {}", &node.get_class());
 
-            if let Ok(mut character) = node.try_cast::<Character>() {
+            if let Ok(mut character) = node.clone().try_cast::<Character>() {
                 character.bind_mut().set_logic_map(logic_arc.clone());
+            }
+
+            // update the scripted character as well
+            if let Ok(mut character) = node.try_cast::<ScriptedCharacter>() {
+                character.bind_mut().set_logic_map(logic_arc.clone());
+                self.scripted_character = Some(character.clone());
             }
         }
 
@@ -118,17 +166,41 @@ impl INode2D for Scene {
         let mut grid_overlay = self.base().get_node_as::<GridOverlay>("GridOverlay");
         grid_overlay.bind_mut().set_logic_map(logic_arc.clone());
 
+        // Get CodeEdit
+        log_debug!("CodeEditor");
+        let editor = self.base().get_node_as::<CodeEdit>("CodeEdit");
+        self.code_editor = Some(editor);
+
+        log_debug!("CodeEditor loaded: {:?}", &self.code_editor);
+
+        // Get Button and connect signal
+        let mut button = self.base().get_node_as::<TextureButton>("RunButton");
+
+        button.connect("pressed", &self.base_mut().callable("on_run_pressed"));
+
         //let tilemap = self.base().get_node_as::<TileMapLayer>("logic_map");
     }
 
-    fn process(&mut self, _delta: f32) {
-        //self.characters.retain(|c| c.is_instance_valid());
+    fn process(&mut self, delta: f32) {
+        if let Some(logic_map) = &self.logic_map {
+            if let Some(character) = &mut self.scripted_character {
+                let mut char_bind = character.bind_mut();
+                if let Some(logic) = &mut char_bind.logic {
+                    let result = self.executor.tick(delta, logic, logic_map);
 
-        //for char in self.characters.iter_mut() {
-        //let mut character = char.bind_mut();
-        //character.update_state(delta);
-        //}
-        // check collision
+                    if result != ExecutorResult::Empty {
+                        // highlight the current executing line in the editor
+                        let current_line = self.executor.current_line();
+
+                        if let Some(code_editor) = &mut self.code_editor {
+                            code_editor.set_caret_line(current_line as i32 - 1);
+                            code_editor.center_viewport_to_caret();
+                        }
+                    }
+                }
+            }
+        }
+
         let input = Input::singleton();
 
         if input.is_action_just_pressed("toggle_debug_overlay") {
@@ -140,5 +212,9 @@ impl INode2D for Scene {
             let mut overlay = self.base().get_node_as::<GridOverlay>("GridOverlay");
             overlay.bind_mut().toggle();
         }
+
+        //process the script and ScriptedCharacter
+        // editor.set_caret_line(line_number as i32 - 1);
+        // editor.center_viewport_to_caret();
     }
 }

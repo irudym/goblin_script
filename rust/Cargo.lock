@@ -682,6 +682,7 @@ dependencies = [
  "game_core",
  "godot",
  "platform",
+ "scripting_vm",
 ]
 
 [[package]]

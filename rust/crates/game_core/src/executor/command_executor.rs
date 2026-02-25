@@ -1,6 +1,7 @@
 use platform::log_debug;
 use platform::logger::LogType;
 
+use crate::executor::ExecutorResult;
 use crate::StateRequest;
 use crate::{
     api::commands::{ExecutionPlayerCommand, PlayerCommand},
@@ -29,15 +30,20 @@ impl CommandExecutor {
         self.commands.front().map_or(0, |cmd| cmd.line)
     }
 
-    pub fn tick(&mut self, _delta: f32, character: &mut CharacterLogic, logic_map: &Arc<LogicMap>) {
+    pub fn tick(
+        &mut self,
+        _delta: f32,
+        character: &mut CharacterLogic,
+        logic_map: &Arc<LogicMap>,
+    ) -> ExecutorResult {
         // Proceed to the next command only after the character executed the previous one and came
         // to Idle state
         if !character.is_idle() {
-            return;
+            return ExecutorResult::Running;
         }
 
         let Some(exec_cmd) = self.commands.front() else {
-            return;
+            return ExecutorResult::Empty;
         };
 
         let cmd = &exec_cmd.command;
@@ -58,30 +64,32 @@ impl CommandExecutor {
                 let _ = character.try_transition(StateRequest::Idle);
                 character.request_state(StateRequest::Turn(direction));
                 self.current = Some(*exec_cmd);
-                return;
+                return ExecutorResult::Turn;
             }
         }
 
+        let mut cell_position = character.get_cell_position();
         match cmd {
             PlayerCommand::MoveNorth => {
                 // get character cell coordinates
-                let mut cell_position = character.get_cell_position();
                 cell_position.y -= 1;
-                let position = logic_map.get_screen_position(cell_position);
-                if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
-                    self.current = self.commands.pop_front();
-                }
             }
             PlayerCommand::MoveEast => {
-                let mut cell_position = character.get_cell_position();
                 cell_position.x += 1;
-                let position = logic_map.get_screen_position(cell_position);
-                if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
-                    self.current = self.commands.pop_front();
-                }
+            }
+            PlayerCommand::MoveWest => {
+                cell_position.x -= 1;
+            }
+            PlayerCommand::MoveSouth => {
+                cell_position.y += 1;
             }
             _ => todo!(),
+        };
+        let position = logic_map.get_screen_position(cell_position);
+        if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
+            self.current = self.commands.pop_front();
         }
+        ExecutorResult::Running
     }
 
     pub fn set_commands(&mut self, commands: Vec<ExecutionPlayerCommand>) {
@@ -97,8 +105,8 @@ impl CommandExecutor {
 mod tests {
     use super::*;
     use crate::ai::worker::init_bt_system;
-    use crate::map::logic_map::{LogicCell, LogicMap};
     use crate::api::commands::{ExecutionPlayerCommand, PlayerCommand};
+    use crate::map::logic_map::{LogicCell, LogicMap};
     use platform::logger::{LogType, Logger};
     use platform::shared::logger_global::init_logger;
     use platform::types::{Direction, Vector2D, Vector2Di};
@@ -166,10 +174,34 @@ mod tests {
         let mut map = LogicMap::new(3, 3);
         for i in 0..3usize {
             // Row 0: non-walkable
-            map.set_cell(i, 0, Some(LogicCell { walkable: false, height: 0, step_type: crate::map::StepType::None }));
+            map.set_cell(
+                i,
+                0,
+                Some(LogicCell {
+                    walkable: false,
+                    height: 0,
+                    step_type: crate::map::StepType::None,
+                }),
+            );
             // Rows 1 and 2: walkable
-            map.set_cell(i, 1, Some(LogicCell { walkable: true, height: 0, step_type: crate::map::StepType::None }));
-            map.set_cell(i, 2, Some(LogicCell { walkable: true, height: 0, step_type: crate::map::StepType::None }));
+            map.set_cell(
+                i,
+                1,
+                Some(LogicCell {
+                    walkable: true,
+                    height: 0,
+                    step_type: crate::map::StepType::None,
+                }),
+            );
+            map.set_cell(
+                i,
+                2,
+                Some(LogicCell {
+                    walkable: true,
+                    height: 0,
+                    step_type: crate::map::StepType::None,
+                }),
+            );
         }
         Arc::new(map)
     }
@@ -225,10 +257,22 @@ mod tests {
 
         let mut executor = CommandExecutor::new();
         executor.set_commands(vec![
-            ExecutionPlayerCommand { command: PlayerCommand::MoveNorth, line: 1 },
-            ExecutionPlayerCommand { command: PlayerCommand::MoveNorth, line: 2 },
-            ExecutionPlayerCommand { command: PlayerCommand::MoveNorth, line: 3 },
-            ExecutionPlayerCommand { command: PlayerCommand::MoveEast,  line: 4 },
+            ExecutionPlayerCommand {
+                command: PlayerCommand::MoveNorth,
+                line: 1,
+            },
+            ExecutionPlayerCommand {
+                command: PlayerCommand::MoveNorth,
+                line: 2,
+            },
+            ExecutionPlayerCommand {
+                command: PlayerCommand::MoveNorth,
+                line: 3,
+            },
+            ExecutionPlayerCommand {
+                command: PlayerCommand::MoveEast,
+                line: 4,
+            },
         ]);
 
         // Run with a generous tick budget (4 commands × ~80 ticks each for movement)

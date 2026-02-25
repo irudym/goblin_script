@@ -4,6 +4,7 @@ mod godot_animator;
 mod godot_logger;
 mod grid_overlay;
 mod scene;
+mod scripted_character;
 
 use game_core::ai::worker::init_bt_system;
 use godot::classes::{ITileMapLayer, TileMapLayer};
