@@ -1,6 +1,6 @@
 use game_core::executor::ExecutorResult;
 use game_core::CommandExecutor;
-use godot::classes::{CodeEdit, INode2D, Node2D, TextureButton, TileMapLayer};
+use godot::classes::{CodeEdit, INode2D, Node2D, RichTextLabel, TextureButton, TileMapLayer};
 use godot::prelude::*;
 use platform::logger::LogType;
 
@@ -43,6 +43,7 @@ struct Scene {
     code_editor: Option<Gd<CodeEdit>>,
     scripted_character: Option<Gd<ScriptedCharacter>>,
     executor: CommandExecutor,
+    log_box: Option<Gd<RichTextLabel>>,
 }
 
 #[godot_api]
@@ -50,6 +51,9 @@ impl Scene {
     #[func]
     fn on_run_pressed(&mut self) {
         log_debug!("Run button pressed!");
+        if let Some(log_box) = &mut self.log_box {
+            log_box.set_text("");
+        }
 
         if let Some(editor) = &self.code_editor {
             let text = editor.get_text();
@@ -68,6 +72,9 @@ impl Scene {
                 }
                 Err(e) => {
                     log_debug!("Script error: {:?}", e);
+                    if let Some(log_box) = &mut self.log_box {
+                        log_box.set_text(&e.message);
+                    }
                 }
             },
             Err(e) => {
@@ -86,6 +93,7 @@ impl INode2D for Scene {
             code_editor: None,
             scripted_character: None,
             executor: CommandExecutor::new(),
+            log_box: None,
         }
     }
 
@@ -172,6 +180,9 @@ impl INode2D for Scene {
         self.code_editor = Some(editor);
 
         log_debug!("CodeEditor loaded: {:?}", &self.code_editor);
+
+        let log_box = self.base().get_node_as::<RichTextLabel>("LogBox");
+        self.log_box = Some(log_box);
 
         // Get Button and connect signal
         let mut button = self.base().get_node_as::<TextureButton>("RunButton");
