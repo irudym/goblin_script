@@ -25,9 +25,9 @@ impl CommandExecutor {
     }
 
     /// Returns the source line number of the command currently being executed,
-    /// or 0 if the queue is empty.
+    /// or 0 if no command has been dispatched yet.
     pub fn current_line(&self) -> usize {
-        self.commands.front().map_or(0, |cmd| cmd.line)
+        self.current.map_or(0, |cmd| cmd.line)
     }
 
     pub fn tick(

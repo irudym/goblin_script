@@ -44,6 +44,7 @@ struct Scene {
     scripted_character: Option<Gd<ScriptedCharacter>>,
     executor: CommandExecutor,
     log_box: Option<Gd<RichTextLabel>>,
+    highlighted_line: i32,
 }
 
 #[godot_api]
@@ -55,9 +56,16 @@ impl Scene {
             log_box.set_text("");
         }
 
-        if let Some(editor) = &self.code_editor {
+        if let Some(editor) = &mut self.code_editor {
+            if self.highlighted_line >= 0 {
+                editor.set_line_background_color(
+                    self.highlighted_line,
+                    Color::from_rgba(0.0, 0.0, 0.0, 0.0),
+                );
+            }
             let text = editor.get_text();
             self.run_script(text.to_string());
+            self.highlighted_line = -1;
         }
     }
 
@@ -67,7 +75,7 @@ impl Scene {
         match ScriptVM::new(&code) {
             Ok(mut vm) => match vm.run_script() {
                 Ok(commands) => {
-                    log_debug!("Commands: {:?}", commands);
+                    log_debug!("Scene: Commands for executor: {:?}", commands);
                     self.executor.set_commands(commands);
                 }
                 Err(e) => {
@@ -94,6 +102,7 @@ impl INode2D for Scene {
             scripted_character: None,
             executor: CommandExecutor::new(),
             log_box: None,
+            highlighted_line: -1,
         }
     }
 
@@ -200,9 +209,31 @@ impl INode2D for Scene {
                     let result = self.executor.tick(delta, logic, logic_map);
 
                     if result != ExecutorResult::Empty {
-                        // highlight the current executing line in the editor
                         let current_line = self.executor.current_line();
-
+                        let line = current_line as i32 - 1;
+                        if let Some(code_editor) = &mut self.code_editor {
+                            // clear previous highlight
+                            if self.highlighted_line >= 0 {
+                                code_editor.set_line_background_color(
+                                    self.highlighted_line,
+                                    Color::from_rgba(0.0, 0.0, 0.0, 0.0),
+                                ); // transparent
+                            }
+                            // set new highlight
+                            code_editor.set_line_background_color(
+                                line,
+                                Color::from_rgba(0.4, 0.8, 0.4, 0.4),
+                            ); //semi-transparent
+                            self.highlighted_line = line;
+                            code_editor.set_caret_line(line);
+                            code_editor.center_viewport_to_caret();
+                        }
+                        // highlight the current executing line in the editor
+                        log_debug!(
+                            "Executor: highlight line number: {}, result: {:?}",
+                            current_line,
+                            &result
+                        );
                         if let Some(code_editor) = &mut self.code_editor {
                             code_editor.set_caret_line(current_line as i32 - 1);
                             code_editor.center_viewport_to_caret();
