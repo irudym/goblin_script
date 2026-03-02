@@ -43,3 +43,8 @@ cargo run -p bench
 
 **Shift + D** - Show a debug overlay. 
 **Shift + G** - Show a grid overlay.
+
+### Script Support
+The game supports JavaScript execution. There are two types of script code:
+* **Code outside the `update()` function:** Executed once at initialization. ScriptVM generates an array of commands, which are then processed by the CommandExecutor.
+* **Code inside the `update()` function:** Executed every frame, provided the command array is empty.

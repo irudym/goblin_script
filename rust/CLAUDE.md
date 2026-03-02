@@ -80,7 +80,9 @@ Worker thread receives `BTJob`s via crossbeam channel, evaluates BTs in parallel
 
 ### Scripting System (`scripting_vm/src/vm/vm.rs`)
 
-ScriptVM loads and executes JavaScript string. 
+ScriptVM loads and executes JavaScript string. There are two types of script code which are supported by the application:
+* **Code outside the `update()` function:** Executed once at initialization. ScriptVM generates an array of commands, which are then processed by the CommandExecutor.
+* **Code inside the `update()` function:** Executed every frame, provided the command array is empty.
 
 
 

@@ -9,7 +9,7 @@ use crate::debug_overlay::DebugOverlay;
 use crate::grid_overlay::GridOverlay;
 use crate::scripted_character::ScriptedCharacter;
 use godot::classes::Input;
-use platform::{log_debug, log_info};
+use platform::{log_debug, log_error, log_info};
 use scripting_vm::ScriptVM;
 use std::sync::Arc;
 
@@ -45,6 +45,7 @@ struct Scene {
     executor: CommandExecutor,
     log_box: Option<Gd<RichTextLabel>>,
     highlighted_line: i32,
+    script_vm: Option<ScriptVM>,
 }
 
 #[godot_api]
@@ -72,8 +73,9 @@ impl Scene {
     fn run_script(&mut self, code: String) {
         log_debug!("Run script: {}", &code);
 
-        match ScriptVM::new(&code) {
-            Ok(mut vm) => match vm.run_script() {
+        if let Some(vm) = &mut self.script_vm {
+            vm.set_code(&code);
+            match vm.run_script() {
                 Ok(commands) => {
                     log_debug!("Scene: Commands for executor: {:?}", commands);
                     self.executor.set_commands(commands);
@@ -84,9 +86,6 @@ impl Scene {
                         log_box.set_text(&e.message);
                     }
                 }
-            },
-            Err(e) => {
-                log_debug!("Failed to create VM: {:?}", e);
             }
         }
     }
@@ -95,6 +94,14 @@ impl Scene {
 #[godot_api]
 impl INode2D for Scene {
     fn init(base: Base<Node2D>) -> Self {
+        let script_vm = match ScriptVM::new("") {
+            Ok(vm) => Some(vm),
+            Err(err) => {
+                log_error!("Cannot initialize ScriptVM due to error: {}", err);
+                None
+            }
+        };
+
         Self {
             base,
             logic_map: None,
@@ -103,6 +110,7 @@ impl INode2D for Scene {
             executor: CommandExecutor::new(),
             log_box: None,
             highlighted_line: -1,
+            script_vm,
         }
     }
 
@@ -237,6 +245,19 @@ impl INode2D for Scene {
                         if let Some(code_editor) = &mut self.code_editor {
                             code_editor.set_caret_line(current_line as i32 - 1);
                             code_editor.center_viewport_to_caret();
+                        }
+                    } else {
+                        if let Some(vm) = &mut self.script_vm {
+                            let snapshot = logic.snapshot();
+                            match vm.tick(&snapshot) {
+                                Ok(_) => (),
+                                Err(err) => {
+                                    log_debug!("Script error: {:?}", err);
+                                    if let Some(log_box) = &mut self.log_box {
+                                        log_box.set_text(&err.message);
+                                    }
+                                }
+                            }
                         }
                     }
                 }

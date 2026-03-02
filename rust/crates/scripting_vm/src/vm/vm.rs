@@ -1,6 +1,7 @@
 use boa_engine::{Context, Source};
 
 use game_core::api::commands::ExecutionPlayerCommand;
+use game_core::character::snapshot::CharacterSnapshot;
 
 use crate::{
     api::{bindings::register_api, preprocessor::instrument_code, script_event::ScriptEvent},
@@ -32,6 +33,10 @@ impl ScriptVM {
         })
     }
 
+    pub fn set_code(&mut self, code: &str) {
+        self.code = code.to_string();
+    }
+
     pub fn run_script(&mut self) -> Result<Vec<ExecutionPlayerCommand>, ScriptError> {
         let instrumented = instrument_code(&self.code);
 
@@ -48,7 +53,10 @@ impl ScriptVM {
         }
     }
 
-    pub fn tick(&mut self) -> Result<Vec<ExecutionPlayerCommand>, ScriptError> {
+    pub fn tick(
+        &mut self,
+        snapshot: &CharacterSnapshot,
+    ) -> Result<Vec<ExecutionPlayerCommand>, ScriptError> {
         let _ = self
             .ctx
             .eval(Source::from_bytes("update();"))
