@@ -1,5 +1,11 @@
 /// List of known command function names that should be tracked
-const COMMAND_FUNCTIONS: &[&str] = &["step_up", "step_down", "step_right", "step_left"];
+const COMMAND_FUNCTIONS: &[&str] = &[
+    "step_up",
+    "step_down",
+    "step_right",
+    "step_left",
+    "set_position",
+];
 
 /// Instruments JavaScript source code by inserting `__line(N);` calls
 /// before each command function call, where N is the 1-based line number.

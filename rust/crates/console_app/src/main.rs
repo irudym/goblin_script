@@ -96,8 +96,11 @@ fn main() {
 
         step_right();
 
-        function update() {
-            step_up();
+        function update(character) {
+            let new_x = character.x;
+            let new_y = character.y;
+
+            set_position(new_x + 10, new_y + 10);
         }
     ";
 
@@ -140,27 +143,14 @@ fn main() {
 
     scripted_character.set_cell_position(3, 3);
 
-    // run 10 cycles
-    for i in 0..460 {
-        log_info!("Cycle: {}", i);
+    log_info!(
+        "Character position: {:?}",
+        scripted_character.get_position()
+    );
 
-        /*
-        let commands = match script.tick() {
-            Ok(commands) => {
-                log_info!("Got commands from script: {:?}", commands);
-                commands
-            }
-            Err(e) => {
-                log_info!(
-                    "JavaScript execution error: {} [line: {}, col: {}]",
-                    e,
-                    e.line,
-                    e.col
-                );
-                vec![]
-            }
-        };
-        */
+    // run 10 cycles
+    for i in 0..10 {
+        log_info!("Cycle: {}", i);
 
         let current_line = executor.current_line();
         executor.tick(0.016, &mut scripted_character, &arc_logic_map);
@@ -171,8 +161,14 @@ fn main() {
             log_info!("Executing script line: {}", current_line);
         }
 
-        // character.process(0.016, &arc_logic_map);
-        scripted_character.process(0.016, &arc_logic_map);
+        match script.tick(&scripted_character.snapshot()) {
+            Ok(commands) => {
+                log_info!("Run update: commands: {:?}", commands);
+            }
+            Err(err) => log_error!("{}", err),
+        }
+
+        // scripted_character.process(0.016, &arc_logic_map);
 
         std::thread::sleep(Duration::from_millis(50));
     }

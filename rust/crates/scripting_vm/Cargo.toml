@@ -10,3 +10,4 @@ path = "src/lib.rs"
 boa_engine = "0.21.0"
 boa_gc = "0.21.0"
 game_core = { path = "../game_core" }
+platform = {path = "../platform"}

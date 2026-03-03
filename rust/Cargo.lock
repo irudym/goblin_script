@@ -1348,6 +1348,7 @@ dependencies = [
  "boa_engine",
  "boa_gc",
  "game_core",
+ "platform",
 ]
 
 [[package]]

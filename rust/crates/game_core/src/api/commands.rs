@@ -1,4 +1,4 @@
-use platform::types::Direction;
+use platform::types::{Direction, Vector2Di};
 
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutionPlayerCommand {
@@ -14,6 +14,7 @@ pub enum PlayerCommand {
     MoveWest,
     Wait(f32),
     Move(Direction),
+    SetPosition(Vector2Di),
 }
 
 impl PlayerCommand {

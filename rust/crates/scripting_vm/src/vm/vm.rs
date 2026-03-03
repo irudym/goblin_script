@@ -1,10 +1,13 @@
-use boa_engine::{Context, Source};
+use boa_engine::{Context, JsString, JsValue, Source};
 
 use game_core::api::commands::ExecutionPlayerCommand;
 use game_core::character::snapshot::CharacterSnapshot;
 
 use crate::{
-    api::{bindings::register_api, preprocessor::instrument_code, script_event::ScriptEvent},
+    api::{
+        bindings::register_api, preprocessor::instrument_code, script_event::ScriptEvent,
+        snapshot::snapshot_to_js_object,
+    },
     runtime::script_instance::ScriptInstance,
     vm::script_error::ScriptError,
 };
@@ -57,11 +60,26 @@ impl ScriptVM {
         &mut self,
         snapshot: &CharacterSnapshot,
     ) -> Result<Vec<ExecutionPlayerCommand>, ScriptError> {
-        let _ = self
-            .ctx
-            .eval(Source::from_bytes("update();"))
+        // Build the character JS object from the snapshot
+        let char_obj =
+            snapshot_to_js_object(snapshot, &mut self.ctx).map_err(ScriptError::from_js_error)?;
+
+        // Get the 'update' function from global scope
+        let global = self.ctx.global_object();
+        let update_val = global
+            .get(JsString::from("update"), &mut self.ctx)
             .map_err(ScriptError::from_js_error)?;
 
+        // Call update(character) - skip if not defined or not callable
+        if let Some(func_obj) = update_val.as_function() {
+            func_obj
+                .call(&JsValue::undefined(), &[char_obj.into()], &mut self.ctx)
+                .map_err(ScriptError::from_js_error)?;
+        } else {
+            return Ok(vec![]);
+        }
+
+        // Collect events
         if let Some(instance) = self.ctx.get_data::<ScriptInstance>() {
             let events = std::mem::take(&mut *instance.events.borrow_mut());
             Ok(collapse_events(events))

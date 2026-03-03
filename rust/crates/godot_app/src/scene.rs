@@ -247,10 +247,13 @@ impl INode2D for Scene {
                             code_editor.center_viewport_to_caret();
                         }
                     } else {
+                        //if the commands are empty, call update function in the script
                         if let Some(vm) = &mut self.script_vm {
                             let snapshot = logic.snapshot();
                             match vm.tick(&snapshot) {
-                                Ok(_) => (),
+                                Ok(commands) => {
+                                    log_debug!("Update call: commands: {:?}", commands);
+                                }
                                 Err(err) => {
                                     log_debug!("Script error: {:?}", err);
                                     if let Some(log_box) = &mut self.log_box {
