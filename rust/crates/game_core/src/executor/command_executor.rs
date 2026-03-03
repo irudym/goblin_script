@@ -100,6 +100,11 @@ impl CommandExecutor {
         self.current
     }
 
+    pub fn reset(&mut self) {
+        self.commands.clear();
+        self.current = None;
+    }
+
     // apply all commands in one shot
     pub fn apply(
         commands: Vec<ExecutionPlayerCommand>,

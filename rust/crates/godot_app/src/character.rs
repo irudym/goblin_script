@@ -111,6 +111,12 @@ impl Character {
 
         Some(result)
     }
+
+    pub fn reset(&mut self) {
+        if let Some(logic) = &mut self.logic {
+            logic.reset();
+        }
+    }
 }
 
 #[godot_api]

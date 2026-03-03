@@ -50,13 +50,35 @@ struct Scene {
 
 #[godot_api]
 impl Scene {
-    #[func]
-    fn on_run_pressed(&mut self) {
-        log_debug!("Run button pressed!");
+    fn reset(&mut self) {
+        // Reset executor
+        self.executor.reset();
+
+        // Reset all characters to their start position
+        let sorting_node = self.base().get_node_as::<Node2D>("SortingNode2D");
+        let children = sorting_node.get_children();
+        for node in children.iter_shared() {
+            if let Ok(mut character) = node.clone().try_cast::<Character>() {
+                character.bind_mut().reset();
+            }
+            if let Ok(mut character) = node.clone().try_cast::<ScriptedCharacter>() {
+                character.bind_mut().reset();
+            }
+        }
+
+        // Clear log box
         if let Some(log_box) = &mut self.log_box {
             log_box.set_text("");
         }
+    }
 
+    #[func]
+    fn on_run_pressed(&mut self) {
+        log_debug!("Run button pressed!");
+
+        self.reset();
+
+        // Clear highlight and run the script
         if let Some(editor) = &mut self.code_editor {
             if self.highlighted_line >= 0 {
                 editor.set_line_background_color(

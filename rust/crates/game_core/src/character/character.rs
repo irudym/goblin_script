@@ -412,6 +412,23 @@ impl CharacterLogic {
 
         self.prev_cell = pos;
     }
+
+    // Reset character to its initial state (position, FSM, BT blackboard)
+    pub fn reset(&mut self) {
+        // Restore position
+        self.set_cell_position(self.start_cell.x, self.start_cell.y);
+
+        // Force idle state
+        self.force_transition(StateRequest::Idle);
+
+        // Clear BT execution state (Blackboard stores sequence/selector indices)
+        self.blackboard = Box::new(Blackboard::new());
+
+        // Clear any state request
+        if let Ok(mut pending) = self.pending_request.lock() {
+            *pending = None;
+        }
+    }
 }
 
 #[cfg(test)]
