@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use platform::shared::logger_global::init_logger;
-use platform::{log_error, log_info};
+use platform::{log_debug, log_error, log_info};
 
 fn main() {
     colog::basic_builder()
@@ -97,10 +97,12 @@ fn main() {
         step_right();
 
         function update(character) {
-            let new_x = character.x;
-            let new_y = character.y;
+            let new_x = character.x + 10;
+            let new_y = character.y + 10;
 
-            set_position(new_x + 10, new_y + 10);
+            set_position(new_x, new_y);
+            step_up();
+            step_left();
         }
     ";
 
@@ -143,14 +145,13 @@ fn main() {
 
     scripted_character.set_cell_position(3, 3);
 
-    log_info!(
-        "Character position: {:?}",
-        scripted_character.get_position()
-    );
-
     // run 10 cycles
     for i in 0..10 {
         log_info!("Cycle: {}", i);
+        log_debug!(
+            "Character position: {:?}",
+            scripted_character.get_position()
+        );
 
         let current_line = executor.current_line();
         executor.tick(0.016, &mut scripted_character, &arc_logic_map);
@@ -164,6 +165,7 @@ fn main() {
         match script.tick(&scripted_character.snapshot()) {
             Ok(commands) => {
                 log_info!("Run update: commands: {:?}", commands);
+                CommandExecutor::apply(commands, &mut scripted_character, &arc_logic_map.clone());
             }
             Err(err) => log_error!("{}", err),
         }

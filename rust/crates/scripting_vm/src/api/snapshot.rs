@@ -8,9 +8,9 @@ use game_core::character::snapshot::CharacterSnapshot;
   ├─────────────────────┼────────────────────────────────┼───────────────────────────────┤
   │ character.id        │ snapshot.id (u32)              │ number                        │
   ├─────────────────────┼────────────────────────────────┼───────────────────────────────┤
-  │ character.x         │ snapshot.position.x (f32)      │ number                        │
+  │ character.x         │ snapshot.cell_position.x (f32) │ number                        │
   ├─────────────────────┼────────────────────────────────┼───────────────────────────────┤
-  │ character.y         │ snapshot.position.y (f32)      │ number                        │
+  │ character.y         │ snapshot.cell_position.y (f32) │ number                        │
   ├─────────────────────┼────────────────────────────────┼───────────────────────────────┤
   │ character.vx        │ snapshot.velocity.x (f32)      │ number                        │
   ├─────────────────────┼────────────────────────────────┼───────────────────────────────┤
@@ -39,13 +39,13 @@ pub fn snapshot_to_js_object(
     )?;
     obj.set(
         JsString::from("x"),
-        JsValue::from(snapshot.position.x as f64),
+        JsValue::from(snapshot.cell_position.x as f64),
         false,
         ctx,
     )?;
     obj.set(
         JsString::from("y"),
-        JsValue::from(snapshot.position.y as f64),
+        JsValue::from(snapshot.cell_position.y as f64),
         false,
         ctx,
     )?;

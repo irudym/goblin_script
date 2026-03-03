@@ -270,6 +270,7 @@ impl CharacterLogic {
             is_idle: self.is_idle(),
             blackboard: self.blackboard.clone(),
             current_speed: self.current_speed,
+            cell_position: self.get_cell_position(),
         }
     }
 

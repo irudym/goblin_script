@@ -99,6 +99,24 @@ impl CommandExecutor {
     pub fn get_current_command(&self) -> Option<ExecutionPlayerCommand> {
         self.current
     }
+
+    // apply all commands in one shot
+    pub fn apply(
+        commands: Vec<ExecutionPlayerCommand>,
+        character: &mut CharacterLogic,
+        logic_map: &Arc<LogicMap>,
+    ) {
+        for cmd in commands.iter() {
+            //apply cmd to the character
+            log_debug!("Executor: cmd: {:?}", cmd);
+            match cmd.command {
+                PlayerCommand::SetPosition(position) => {
+                    character.set_cell_position(position.x, position.y);
+                }
+                _ => (),
+            }
+        }
+    }
 }
 
 #[cfg(test)]

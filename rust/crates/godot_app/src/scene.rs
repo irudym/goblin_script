@@ -253,6 +253,7 @@ impl INode2D for Scene {
                             match vm.tick(&snapshot) {
                                 Ok(commands) => {
                                     log_debug!("Update call: commands: {:?}", commands);
+                                    CommandExecutor::apply(commands, logic, &logic_map.clone());
                                 }
                                 Err(err) => {
                                     log_debug!("Script error: {:?}", err);

@@ -6,7 +6,7 @@ use game_core::character::snapshot::CharacterSnapshot;
 use game_core::CharacterLogic;
 use platform::logger::{LogType, Logger};
 use platform::shared::logger_global::init_logger;
-use platform::types::Vector2D;
+use platform::types::{Vector2D, Vector2Di};
 use platform::Animator;
 use rayon::iter::IntoParallelRefMutIterator;
 use rayon::prelude::*;
@@ -62,6 +62,7 @@ fn main() {
             is_idle: c.is_idle(),
             blackboard: Default::default(),
             current_speed: 0.0,
+            cell_position: Vector2Di { x: 0, y: 0 },
         })
         .collect();
 
