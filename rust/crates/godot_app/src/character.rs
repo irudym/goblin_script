@@ -22,14 +22,16 @@ pub struct Character {
     base: Base<Area2D>,
     logic: Option<CharacterLogic>,
     logic_map: Option<Arc<LogicMap>>,
-    tile_size: f32,
 }
 
 //#[godot_api]
 impl Character {
     //#[func]
     pub fn set_logic_map(&mut self, logic_map: Arc<LogicMap>) {
-        self.logic_map = Some(logic_map);
+        self.logic_map = Some(logic_map.clone());
+        if let Some(logic) = &mut self.logic {
+            logic.set_logic_map(logic_map);
+        }
     }
 
     // check if animation is still in process, keep out the switching to new animation
@@ -55,9 +57,15 @@ impl Character {
 
         log_info!("Patrol points: {:?}", route);
 
+        let tile_size = if let Some(map) = &self.logic_map {
+            map.get_cell_size()
+        } else {
+            64.0
+        };
+
         Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
-                Box::new(NextWaypoint::new(route, "target_pos", self.tile_size)),
+                Box::new(NextWaypoint::new(route, "target_pos", tile_size)),
                 Box::new(Wait::new(0.64)),
                 Box::new(IsAtTarget::new("target_pos")),
             ])),
@@ -126,7 +134,6 @@ impl IArea2D for Character {
             base,
             logic: None,
             logic_map: None,
-            tile_size: 64.0,
         }
     }
 

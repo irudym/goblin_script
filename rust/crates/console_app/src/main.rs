@@ -123,6 +123,7 @@ fn main() {
 
     let scripted_animator = ConsoleAnimator::new();
     let mut scripted_character = CharacterLogic::new(2, Box::new(scripted_animator));
+    scripted_character.set_logic_map(arc_logic_map.clone());
 
     let commands = match script.run_script() {
         Ok(commands) => {
@@ -165,7 +166,7 @@ fn main() {
         match script.tick(&scripted_character.snapshot()) {
             Ok(commands) => {
                 log_info!("Run update: commands: {:?}", commands);
-                CommandExecutor::apply(commands, &mut scripted_character, &arc_logic_map.clone());
+                CommandExecutor::apply(commands, &mut scripted_character);
             }
             Err(err) => log_error!("{}", err),
         }

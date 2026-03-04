@@ -106,11 +106,7 @@ impl CommandExecutor {
     }
 
     // apply all commands in one shot
-    pub fn apply(
-        commands: Vec<ExecutionPlayerCommand>,
-        character: &mut CharacterLogic,
-        logic_map: &Arc<LogicMap>,
-    ) {
+    pub fn apply(commands: Vec<ExecutionPlayerCommand>, character: &mut CharacterLogic) {
         for cmd in commands.iter() {
             //apply cmd to the character
             log_debug!("Executor: cmd: {:?}", cmd);
@@ -127,25 +123,13 @@ impl CommandExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ai::worker::init_bt_system;
     use crate::api::commands::{ExecutionPlayerCommand, PlayerCommand};
     use crate::map::logic_map::{LogicCell, LogicMap};
-    use platform::logger::{LogType, Logger};
-    use platform::shared::logger_global::init_logger;
     use platform::types::{Direction, Vector2D, Vector2Di};
     use platform::Animator;
 
-    static INIT: std::sync::Once = std::sync::Once::new();
-
     fn ensure_init() {
-        INIT.call_once(|| {
-            struct NullLogger;
-            impl Logger for NullLogger {
-                fn log(&self, _: LogType, _: &str) {}
-            }
-            init_logger(Box::new(NullLogger));
-            init_bt_system();
-        });
+        crate::test_utils::test_init::ensure_init();
     }
 
     /// A test animator that resets `playing` to false on each `process()` call,
@@ -229,12 +213,13 @@ mod tests {
         Arc::new(map)
     }
 
-    fn make_character(cell_x: i32, cell_y: i32) -> CharacterLogic {
+    fn make_character(cell_x: i32, cell_y: i32, map: &Arc<LogicMap>) -> CharacterLogic {
         ensure_init();
         let mut ch = CharacterLogic::new(
             (cell_x as u32) * 1000 + cell_y as u32,
             Box::new(TestAnimator::new(Vector2D::new(0.0, 0.0))),
         );
+        ch.set_logic_map(map.clone());
         // set_cell_position sets both the screen position and prev_cell
         ch.set_cell_position(cell_x, cell_y);
         ch
@@ -271,7 +256,7 @@ mod tests {
     #[test]
     fn test_blocked_move_north_then_move_east() {
         let map = make_3x3_map();
-        let mut character = make_character(1, 2);
+        let mut character = make_character(1, 2, &map);
 
         // Start character facing NORTH so no initial turn is needed for MoveNorth
         character.direction = Direction::NORTH;
@@ -308,6 +293,106 @@ mod tests {
             "Character should end up at cell (2,1) after blocked north moves and successful east move, got ({},{})",
             final_cell.x,
             final_cell.y,
+        );
+    }
+
+    // --- reset() tests ---
+
+    #[test]
+    fn test_executor_reset_clears_commands() {
+        let map = make_3x3_map();
+        let mut character = make_character(1, 1, &map);
+        character.direction = Direction::NORTH;
+        character.try_transition(StateRequest::Idle).unwrap();
+
+        let mut executor = CommandExecutor::new();
+        executor.set_commands(vec![
+            ExecutionPlayerCommand {
+                command: PlayerCommand::MoveNorth,
+                line: 1,
+            },
+            ExecutionPlayerCommand {
+                command: PlayerCommand::MoveEast,
+                line: 2,
+            },
+        ]);
+
+        executor.reset();
+
+        let result = executor.tick(0.016, &mut character, &map);
+        assert_eq!(
+            result,
+            ExecutorResult::Empty,
+            "executor should return Empty immediately after reset"
+        );
+    }
+
+    #[test]
+    fn test_executor_reset_clears_current_line() {
+        let map = make_3x3_map();
+        let mut character = make_character(1, 1, &map);
+        character.direction = Direction::NORTH;
+        character.try_transition(StateRequest::Idle).unwrap();
+
+        let mut executor = CommandExecutor::new();
+        executor.set_commands(vec![ExecutionPlayerCommand {
+            command: PlayerCommand::MoveNorth,
+            line: 42,
+        }]);
+
+        // Tick once to dispatch the command and populate `current`
+        executor.tick(0.016, &mut character, &map);
+        assert_eq!(
+            executor.current_line(),
+            42,
+            "current_line should be set after first tick"
+        );
+
+        executor.reset();
+
+        assert_eq!(
+            executor.current_line(),
+            0,
+            "current_line should be 0 after reset"
+        );
+    }
+
+    #[test]
+    fn test_executor_reset_then_run_new_commands() {
+        let map = make_3x3_map();
+        let mut character = make_character(1, 2, &map);
+        character.direction = Direction::NORTH;
+        character.try_transition(StateRequest::Idle).unwrap();
+
+        let mut executor = CommandExecutor::new();
+        // Load first script: move north
+        executor.set_commands(vec![ExecutionPlayerCommand {
+            command: PlayerCommand::MoveNorth,
+            line: 1,
+        }]);
+        run_until_idle_or_budget(&mut executor, &mut character, &map, 500);
+        assert_eq!(character.get_cell_position(), Vector2Di::new(1, 1));
+
+        // Reset both executor and character, then run a different command
+        executor.reset();
+        character.start_cell = Vector2Di::new(1, 2);
+        character.reset();
+        assert_eq!(
+            character.get_cell_position(),
+            Vector2Di::new(1, 2),
+            "character should be back at start after reset"
+        );
+
+        executor.set_commands(vec![ExecutionPlayerCommand {
+            command: PlayerCommand::MoveEast,
+            line: 1,
+        }]);
+        run_until_idle_or_budget(&mut executor, &mut character, &map, 500);
+
+        assert_eq!(
+            character.get_cell_position(),
+            Vector2Di::new(2, 2),
+            "second script should execute from reset position"
         );
     }
 }

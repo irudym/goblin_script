@@ -24,6 +24,7 @@ use crate::map::{LogicMap, StepType};
 
 pub struct CharacterLogic {
     pub direction: Direction,
+    pub start_direction: Direction,
     pub speed: f32,
     pub current_speed: f32,
     state: Option<Box<dyn FSM>>, // the active state machine, accessible only by Main Thread
@@ -32,7 +33,7 @@ pub struct CharacterLogic {
 
     animator: Box<dyn Animator>,
 
-    cell_size: f32, //default value: 32px
+    // cell_size: f32, //default value: 32px
 
     // pending_commands: Vec<BTCommand>,
     pub id: CharacterId,
@@ -41,6 +42,7 @@ pub struct CharacterLogic {
 
     prev_cell: Vector2Di,
     pub start_cell: Vector2Di, // initial coordinates, used during level reset.
+    logic_map: Arc<LogicMap>,
 }
 
 impl CharacterLogic {
@@ -49,12 +51,13 @@ impl CharacterLogic {
         Self {
             id,
             direction: Direction::SOUTH,
+            start_direction: Direction::SOUTH,
             speed: 100.0,
             current_speed: 0.0,
             state: None,
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
-            cell_size: 64.0, // TODO: need to use LogicMap for that.
+            logic_map: Arc::new(LogicMap::new(0, 0)),
             // pending_commands: Vec::new(),
             bt: Arc::new(BehaviourTree::default()),
             blackboard: Box::new(Blackboard::new()),
@@ -62,6 +65,15 @@ impl CharacterLogic {
             prev_cell: Vector2Di::new(0, 0),
             start_cell: Vector2Di::new(0, 0),
         }
+    }
+
+    pub fn set_logic_map(&mut self, map: Arc<LogicMap>) {
+        self.logic_map = map;
+    }
+
+    pub fn set_initial_values(&mut self, start_cell: Vector2Di, start_direction: Direction) {
+        self.start_cell = start_cell;
+        self.start_direction = start_direction;
     }
 
     // TODO: need to get the cell size as a parameter
@@ -84,26 +96,19 @@ impl CharacterLogic {
 
     // Set character position in tile grid coordinates: I,J, reset the prev_cell as well
     pub fn set_cell_position(&mut self, i: i32, j: i32) -> Vector2Di {
-        self.set_position(Vector2D {
-            x: i as f32 * self.cell_size + self.cell_size / 2.0,
-            y: j as f32 * self.cell_size + self.cell_size / 2.0,
-        });
         let position = Vector2Di { x: i, y: j };
+        let screen_pos = self.logic_map.get_screen_position(position);
+
+        self.set_position(screen_pos);
+
         self.prev_cell = position;
         position
     }
 
     //get character cell position in tile grid coordinates: I,J
-    // DEPRECATED: use logic_map.get_cell_position(position: Vector2D)
     pub fn get_cell_position(&self) -> Vector2Di {
         let position = self.animator.get_global_position();
-        let i = (position.x / self.cell_size) as i32;
-        let j = (position.y / self.cell_size) as i32;
-        Vector2Di { x: i, y: j }
-    }
-
-    pub fn set_cell_size(&mut self, size: f32) {
-        self.cell_size = size;
+        self.logic_map.get_cell_position(position)
     }
 
     // check if the character is in the idle state
@@ -415,8 +420,14 @@ impl CharacterLogic {
 
     // Reset character to its initial state (position, FSM, BT blackboard)
     pub fn reset(&mut self) {
+        // Restore direction
+        self.direction = self.start_direction;
+
         // Restore position
         self.set_cell_position(self.start_cell.x, self.start_cell.y);
+
+        // Restore speed
+        self.speed = 0.0;
 
         // Force idle state
         self.force_transition(StateRequest::Idle);
@@ -434,22 +445,10 @@ impl CharacterLogic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ai::worker::init_bt_system;
     use crate::map::logic_map::{LogicCell, LogicMap};
-    use platform::logger::{LogType, Logger};
-    use platform::shared::logger_global::init_logger;
-
-    static INIT: std::sync::Once = std::sync::Once::new();
 
     fn ensure_init() {
-        INIT.call_once(|| {
-            struct NullLogger;
-            impl Logger for NullLogger {
-                fn log(&self, _: LogType, _: &str) {}
-            }
-            init_logger(Box::new(NullLogger));
-            init_bt_system();
-        });
+        crate::test_utils::test_init::ensure_init();
     }
 
     struct TestAnimator {
@@ -513,7 +512,7 @@ mod tests {
         Arc::new(map)
     }
 
-    fn make_character(cell_x: i32, cell_y: i32) -> CharacterLogic {
+    fn make_character(cell_x: i32, cell_y: i32, map: &Arc<LogicMap>) -> CharacterLogic {
         ensure_init();
         let cell_size: f32 = 64.0;
         let pos = Vector2D {
@@ -524,6 +523,7 @@ mod tests {
             cell_x as u32 * 1000 + cell_y as u32,
             Box::new(TestAnimator::new(pos)),
         );
+        ch.set_logic_map(map.clone());
         ch.prev_cell = Vector2Di::new(cell_x, cell_y);
         ch
     }
@@ -533,7 +533,7 @@ mod tests {
     #[test]
     fn test_effective_velocity_flat_ground_east() {
         let map = make_test_map();
-        let mut ch = make_character(0, 0);
+        let mut ch = make_character(0, 0, &map);
         ch.direction = Direction::EAST;
         ch.current_speed = 100.0;
         let v = ch.get_effective_velocity(&map);
@@ -543,7 +543,7 @@ mod tests {
     #[test]
     fn test_effective_velocity_step_east() {
         let map = make_test_map();
-        let mut ch = make_character(2, 0);
+        let mut ch = make_character(2, 0, &map);
         ch.direction = Direction::EAST;
         ch.current_speed = 100.0;
         let v = ch.get_effective_velocity(&map);
@@ -553,7 +553,7 @@ mod tests {
     #[test]
     fn test_effective_velocity_step_west() {
         let map = make_test_map();
-        let mut ch = make_character(3, 0);
+        let mut ch = make_character(3, 0, &map);
         ch.direction = Direction::WEST;
         ch.current_speed = 100.0;
         let v = ch.get_effective_velocity(&map);
@@ -563,7 +563,7 @@ mod tests {
     #[test]
     fn test_effective_velocity_step_north() {
         let map = make_test_map();
-        let mut ch = make_character(2, 0);
+        let mut ch = make_character(2, 0, &map);
         ch.direction = Direction::NORTH;
         ch.current_speed = 100.0;
         let v = ch.get_effective_velocity(&map);
@@ -576,7 +576,7 @@ mod tests {
     #[test]
     fn test_process_step_going_up() {
         let map = make_test_map();
-        let mut ch = make_character(2, 0);
+        let mut ch = make_character(2, 0, &map);
         ch.direction = Direction::EAST;
         ch.current_speed = 100.0;
         ch.request_state(StateRequest::Run);
@@ -594,7 +594,7 @@ mod tests {
     #[test]
     fn test_process_step_going_down() {
         let map = make_test_map();
-        let mut ch = make_character(3, 0);
+        let mut ch = make_character(3, 0, &map);
         ch.direction = Direction::WEST;
         ch.current_speed = 100.0;
         ch.request_state(StateRequest::Run);
@@ -612,7 +612,7 @@ mod tests {
     #[test]
     fn test_process_flat_ground_no_y_change() {
         let map = make_test_map();
-        let mut ch = make_character(0, 0);
+        let mut ch = make_character(0, 0, &map);
         ch.direction = Direction::EAST;
         ch.current_speed = 100.0;
         ch.request_state(StateRequest::Run);
@@ -626,6 +626,79 @@ mod tests {
         assert!(
             (end_y - start_y).abs() < f32::EPSILON,
             "Y should not change on flat ground"
+        );
+    }
+
+    // --- reset() tests ---
+
+    #[test]
+    fn test_reset_restores_position() {
+        let map = make_test_map();
+        let mut ch = make_character(0, 0, &map);
+        ch.start_cell = Vector2Di::new(1, 0);
+        ch.set_cell_position(1, 0); // move to start_cell first so prev_cell is consistent
+
+        // Move to a different cell
+        ch.set_cell_position(4, 0);
+        assert_eq!(ch.get_cell_position(), Vector2Di::new(4, 0));
+
+        ch.reset();
+
+        assert_eq!(
+            ch.get_cell_position(),
+            Vector2Di::new(1, 0),
+            "position should be restored to start_cell after reset"
+        );
+    }
+
+    #[test]
+    fn test_reset_sets_idle_state() {
+        let map = make_test_map();
+        let mut ch = make_character(0, 0, &map);
+        // Put character into Run state to get it out of the initial None state
+        ch.force_transition(StateRequest::Run);
+        assert!(
+            !ch.is_idle(),
+            "character should not be idle after Run transition"
+        );
+
+        ch.reset();
+
+        assert!(ch.is_idle(), "character should be idle after reset");
+    }
+
+    #[test]
+    fn test_reset_clears_speed() {
+        let map = make_test_map();
+        let mut ch = make_character(0, 0, &map);
+        ch.force_transition(StateRequest::Run); // enters Run, sets current_speed = ch.speed
+        assert!(
+            ch.current_speed > 0.0,
+            "speed should be non-zero in Run state"
+        );
+
+        ch.reset();
+
+        assert_eq!(ch.current_speed, 0.0, "speed should be 0 after reset");
+    }
+
+    #[test]
+    fn test_reset_clears_pending_request() {
+        let map = make_test_map();
+        let mut ch = make_character(0, 0, &map);
+        ch.start_cell = Vector2Di::new(0, 0);
+
+        // Queue a Run request without processing it
+        ch.request_state(StateRequest::Run);
+
+        ch.reset();
+
+        // After reset the pending request is cleared: processing a tick should
+        // keep the character idle rather than switching to Run.
+        ch.process(0.016, &map);
+        assert!(
+            ch.is_idle(),
+            "pending request should have been cleared by reset"
         );
     }
 }

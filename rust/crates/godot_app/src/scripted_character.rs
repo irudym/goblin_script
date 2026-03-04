@@ -22,7 +22,10 @@ pub struct ScriptedCharacter {
 impl ScriptedCharacter {
     //#[func]
     pub fn set_logic_map(&mut self, logic_map: Arc<LogicMap>) {
-        self.logic_map = Some(logic_map);
+        self.logic_map = Some(logic_map.clone());
+        if let Some(logic) = &mut self.logic {
+            logic.set_logic_map(logic_map);
+        }
     }
 
     fn get_id(&self) -> CharacterId {
@@ -73,6 +76,10 @@ impl IArea2D for ScriptedCharacter {
         log_info!("Character[{}] id: {}", &name, id);
 
         let mut logic = CharacterLogic::new(id, animator);
+
+        if let Some(map) = &mut self.logic_map {
+            logic.set_logic_map(map.clone());
+        }
 
         logic.set_position(Vector2D {
             x: position.x,

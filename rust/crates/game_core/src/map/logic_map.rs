@@ -37,6 +37,10 @@ impl LogicMap {
         }
     }
 
+    pub fn get_cell_size(&self) -> f32 {
+        self.cell_size
+    }
+
     pub fn set_size(&mut self, width: usize, height: usize) {
         self.map_data.resize(width * height, None);
         self.width = width;

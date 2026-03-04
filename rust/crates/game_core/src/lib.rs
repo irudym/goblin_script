@@ -10,6 +10,7 @@ pub mod character;
 pub mod executor;
 pub mod fsm;
 pub mod map;
+pub mod test_utils;
 
 /*
  * Public re-export
