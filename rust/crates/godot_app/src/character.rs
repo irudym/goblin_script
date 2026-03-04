@@ -34,7 +34,12 @@ impl Character {
             logic.set_logic_map(logic_map);
             logic.start_cell = logic.snap_to_cell();
             if let Some(points) = patrol {
-                logic.set_cell_position(points[0].x as i32, points[0].y as i32);
+                let start_x = points[0].x as i32;
+                let start_y = points[0].y as i32;
+                logic.set_cell_position(start_x, start_y);
+                // start_cell must be the first patrol point so reset() returns the
+                // character to the correct patrol start, not the editor-placed position.
+                logic.start_cell = platform::types::Vector2Di::new(start_x, start_y);
             }
         }
     }
