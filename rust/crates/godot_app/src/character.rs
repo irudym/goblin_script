@@ -29,8 +29,13 @@ impl Character {
     //#[func]
     pub fn set_logic_map(&mut self, logic_map: Arc<LogicMap>) {
         self.logic_map = Some(logic_map.clone());
+        let patrol = self.get_patrol_point();
         if let Some(logic) = &mut self.logic {
             logic.set_logic_map(logic_map);
+            logic.start_cell = logic.snap_to_cell();
+            if let Some(points) = patrol {
+                logic.set_cell_position(points[0].x as i32, points[0].y as i32);
+            }
         }
     }
 
@@ -156,17 +161,12 @@ impl IArea2D for Character {
 
         let mut logic = CharacterLogic::new(id, animator);
 
-        //set current coordinate, update start_cell value
         logic.set_position(Vector2D {
             x: position.x,
             y: position.y,
         });
-        logic.start_cell = logic.snap_to_cell();
 
         logic.bt = tree;
-        if let Some(points) = self.get_patrol_point() {
-            logic.set_cell_position(points[0].x as i32, points[0].y as i32);
-        }
 
         self.logic = Some(logic);
 

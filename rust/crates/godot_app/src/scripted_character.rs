@@ -25,6 +25,7 @@ impl ScriptedCharacter {
         self.logic_map = Some(logic_map.clone());
         if let Some(logic) = &mut self.logic {
             logic.set_logic_map(logic_map);
+            logic.start_cell = logic.snap_to_cell();
         }
     }
 
@@ -85,7 +86,6 @@ impl IArea2D for ScriptedCharacter {
             x: position.x,
             y: position.y,
         });
-        logic.start_cell = logic.snap_to_cell();
 
         self.logic = Some(logic);
     }
