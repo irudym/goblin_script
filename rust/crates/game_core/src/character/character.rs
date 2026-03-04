@@ -76,7 +76,6 @@ impl CharacterLogic {
         self.start_direction = start_direction;
     }
 
-    // TODO: need to get the cell size as a parameter
     // Snap the character to the cell coordinates
     // Return new cell coordinates
     pub fn snap_to_cell(&mut self) -> Vector2Di {
@@ -425,9 +424,6 @@ impl CharacterLogic {
 
         // Restore position
         self.set_cell_position(self.start_cell.x, self.start_cell.y);
-
-        // Restore speed
-        self.speed = 0.0;
 
         // Force idle state
         self.force_transition(StateRequest::Idle);
