@@ -43,6 +43,7 @@ pub struct CharacterLogic {
     prev_cell: Vector2Di,
     pub start_cell: Vector2Di, // initial coordinates, used during level reset.
     logic_map: Arc<LogicMap>,
+    generation: u32, // incremented on reset() to invalidate stale BT results
 }
 
 impl CharacterLogic {
@@ -64,6 +65,7 @@ impl CharacterLogic {
 
             prev_cell: Vector2Di::new(0, 0),
             start_cell: Vector2Di::new(0, 0),
+            generation: 0,
         }
     }
 
@@ -310,10 +312,11 @@ impl CharacterLogic {
                 snapshot: self.snapshot(),
                 bt: self.bt.clone(),
                 delta,
+                generation: self.generation,
             });
         }
 
-        if let Some(result) = take_result(self.id) {
+        if let Some(result) = take_result(self.id, self.generation) {
             self.process_commands(result);
         }
     }
@@ -419,6 +422,10 @@ impl CharacterLogic {
 
     // Reset character to its initial state (position, FSM, BT blackboard)
     pub fn reset(&mut self) {
+        // Increment generation so any in-flight BT jobs from before this reset
+        // are considered stale and their results will be discarded.
+        self.generation = self.generation.wrapping_add(1);
+
         // Restore direction
         self.direction = self.start_direction;
 

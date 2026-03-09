@@ -13,8 +13,7 @@ use platform::log_debug;
 use platform::logger::LogType;
 
 pub static JOB_TX: OnceLock<Sender<BTJob>> = OnceLock::new();
-static RESULT_MAP: OnceLock<Mutex<std::collections::HashMap<CharacterId, BTResult>>> =
-    OnceLock::new();
+static RESULT_MAP: OnceLock<Mutex<HashMap<CharacterId, (u32, BTResult)>>> = OnceLock::new();
 
 pub fn init_bt_system() {
     let pool = ThreadPoolBuilder::new()
@@ -42,9 +41,16 @@ pub fn init_bt_system() {
     log_debug!("Separated thread created: {:?}", &handle);
 }
 
-pub fn take_result(character_id: CharacterId) -> Option<BTResult> {
+/// Returns the BT result only if it matches `expected_generation`.
+/// Always removes the stored entry so stale results don't accumulate.
+pub fn take_result(character_id: CharacterId, expected_generation: u32) -> Option<BTResult> {
     let mut map = RESULT_MAP.get().unwrap().lock().unwrap();
-    map.remove(&character_id)
+    if let Some((gen, result)) = map.remove(&character_id) {
+        if gen == expected_generation {
+            return Some(result);
+        }
+    }
+    None
 }
 
 fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
@@ -65,7 +71,7 @@ fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
         }
 
         // run all jobs in parallel, collect results locally
-        let batch_results: Mutex<Vec<(CharacterId, BTResult)>> = Mutex::new(Vec::new());
+        let batch_results: Mutex<Vec<(CharacterId, u32, BTResult)>> = Mutex::new(Vec::new());
         pool.scope(|scope| {
             for job in jobs.drain(..) {
                 let batch_results = &batch_results;
@@ -74,15 +80,15 @@ fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
                     batch_results
                         .lock()
                         .unwrap()
-                        .push((job.character_id, result));
+                        .push((job.character_id, job.generation, result));
                 });
             }
         });
 
         // single bulk insert into the global result map
         let mut map = RESULT_MAP.get().unwrap().lock().unwrap();
-        for (id, result) in batch_results.into_inner().unwrap() {
-            map.insert(id, result);
+        for (id, gen, result) in batch_results.into_inner().unwrap() {
+            map.insert(id, (gen, result));
         }
     }
 }

@@ -6,4 +6,5 @@ pub struct BTJob {
     pub snapshot: CharacterSnapshot,
     pub bt: BTRef,
     pub delta: f32,
+    pub generation: u32,
 }

@@ -9,7 +9,7 @@ use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::{BTRef, BehaviourTree};
 use game_core::CharacterLogic;
-use platform::types::Vector2D;
+use platform::types::{Vector2D, Vector2Di};
 
 //use platform::shared::logger_global::log;
 
@@ -39,7 +39,7 @@ impl Character {
                 logic.set_cell_position(start_x, start_y);
                 // start_cell must be the first patrol point so reset() returns the
                 // character to the correct patrol start, not the editor-placed position.
-                logic.start_cell = platform::types::Vector2Di::new(start_x, start_y);
+                logic.start_cell = Vector2Di::new(start_x, start_y);
             }
         }
     }
