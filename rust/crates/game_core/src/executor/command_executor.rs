@@ -85,11 +85,11 @@ impl CommandExecutor {
             }
             PlayerCommand::SetPosition(position) => {
                 character.set_cell_position(position.x, position.y);
+                self.current = self.commands.pop_front();
             }
             PlayerCommand::Wait(time) => {
                 let _ = character.try_transition(StateRequest::Wait(*time));
                 self.current = self.commands.pop_front();
-                return ExecutorResult::Running;
             }
             _ => todo!(),
         };
@@ -124,6 +124,9 @@ impl CommandExecutor {
             match cmd.command {
                 PlayerCommand::SetPosition(position) => {
                     character.set_cell_position(position.x, position.y);
+                }
+                PlayerCommand::Wait(time) => {
+                    let _ = character.try_transition(StateRequest::Wait(time));
                 }
                 _ => (),
             }
