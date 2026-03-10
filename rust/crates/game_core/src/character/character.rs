@@ -9,7 +9,7 @@ use crate::character::request::StateRequest;
 use crate::character::snapshot::CharacterSnapshot;
 use crate::character::CharacterId;
 use crate::fsm::FSM;
-use crate::fsm::{IdleState, RunState, TurnState, WalkState};
+use crate::fsm::{IdleState, RunState, TurnState, WaitState, WalkState};
 use crate::StateType;
 use platform::logger::LogType;
 use platform::types::Vector2Di;
@@ -203,6 +203,7 @@ impl CharacterLogic {
             StateRequest::Run => StateType::RUN,
             StateRequest::Turn(_) => StateType::TURN,
             StateRequest::WalkTo(_) => StateType::RUN,
+            StateRequest::Wait(_) => StateType::WAIT,
         };
 
         //2. validate transition rules
@@ -216,6 +217,7 @@ impl CharacterLogic {
             StateRequest::Run => Box::new(RunState::new()),
             StateRequest::Turn(direction) => Box::new(TurnState::new(direction)),
             StateRequest::WalkTo(target) => Box::new(WalkState::new(target)),
+            StateRequest::Wait(time) => Box::new(WaitState::new(time)),
         };
 
         // perform the swap
@@ -256,6 +258,7 @@ impl CharacterLogic {
             StateRequest::Run => Box::new(RunState::new()),
             StateRequest::Turn(direction) => Box::new(TurnState::new(direction)),
             StateRequest::WalkTo(target) => Box::new(WalkState::new(target)),
+            StateRequest::Wait(time) => Box::new(WaitState::new(time)),
         };
 
         // perform the swap

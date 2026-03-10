@@ -5,6 +5,7 @@ pub enum StateType {
     RUN,
     TURN,
     IDLE,
+    WAIT,
 }
 
 pub trait FSM {
@@ -21,9 +22,11 @@ pub trait FSM {
 pub mod idle;
 pub mod run;
 pub mod turn;
+pub mod wait;
 pub mod walk;
 
 pub use idle::IdleState;
 pub use run::RunState;
 pub use turn::TurnState;
+pub use wait::WaitState;
 pub use walk::WalkState;

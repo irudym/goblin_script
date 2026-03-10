@@ -83,11 +83,22 @@ impl CommandExecutor {
             PlayerCommand::MoveSouth => {
                 cell_position.y += 1;
             }
+            PlayerCommand::SetPosition(position) => {
+                character.set_cell_position(position.x, position.y);
+            }
+            PlayerCommand::Wait(time) => {
+                let _ = character.try_transition(StateRequest::Wait(*time));
+                self.current = self.commands.pop_front();
+                return ExecutorResult::Running;
+            }
             _ => todo!(),
         };
-        let position = logic_map.get_screen_position(cell_position);
-        if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
-            self.current = self.commands.pop_front();
+        // Request WalkTo state in case the cell_position changed
+        if character.get_cell_position() != cell_position {
+            let position = logic_map.get_screen_position(cell_position);
+            if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
+                self.current = self.commands.pop_front();
+            }
         }
         ExecutorResult::Running
     }

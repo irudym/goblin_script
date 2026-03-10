@@ -27,6 +27,17 @@ fn register_function(ctx: &mut Context, name: &str, cmd: PlayerCommand, args: us
                         }
                     }
                 }
+                PlayerCommand::Wait(_) => {
+                    if args.len() > 0 {
+                        match args[0].as_number() {
+                            Some(val) => instance
+                                .events
+                                .borrow_mut()
+                                .push(ScriptEvent::Command(PlayerCommand::Wait(val as f32))),
+                            _ => (),
+                        }
+                    }
+                }
                 _ => {
                     instance.events.borrow_mut().push(ScriptEvent::Command(cmd));
                 }
@@ -61,6 +72,7 @@ pub fn register_api(ctx: &mut Context) {
         PlayerCommand::SetPosition(Vector2Di { x: 0, y: 0 }),
         2,
     );
+    register_function(ctx, "wait", PlayerCommand::Wait(0.0), 1);
 
     // Register __line(N) for source line tracking (inserted by preprocessor)
     let line_fn = NativeFunction::from_fn_ptr(step_binding);

@@ -6,4 +6,5 @@ pub enum StateRequest {
     Run,
     Turn(Direction),
     WalkTo(Vector2D),
+    Wait(f32),
 }

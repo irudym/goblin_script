@@ -8,7 +8,7 @@ pub struct IdleState {
 impl IdleState {
     pub fn new() -> Self {
         Self {
-            allowed_transition: vec![StateType::RUN, StateType::TURN],
+            allowed_transition: vec![StateType::RUN, StateType::TURN, StateType::WAIT],
         }
     }
 }
