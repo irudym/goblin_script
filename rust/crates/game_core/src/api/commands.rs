@@ -15,9 +15,9 @@ pub enum PlayerCommand {
     Wait(f32),
     Move(Direction),
     SetPosition(Vector2Di),
-    Pick,        // Pick an object from ground
-    Open,        // Open a gate, a door which is in front of the scripted_characters
-    Say(String), //Say something
+    Pick, // Pick an object from ground
+    Open, // Open a gate, a door which is in front of the scripted_characters
+          // Say(String), //Say something
 }
 
 impl PlayerCommand {
