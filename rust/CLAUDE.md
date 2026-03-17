@@ -55,10 +55,16 @@ console_app / godot_app / benchmark
 ### Character System (`game_core/src/character/`)
 
 `CharacterLogic` is the central entity. Its `process(delta, logic_map)` method:
+1. Handles FSM state transitions via `pending_request` (Arc<Mutex>, last-win strategy)
+2. Updates position, validates movement against LogicMap, applies step height offsets
+
+`NPCCharacterLogic` extends `CharacterLogic` by
 1. Submits a BT job to the AI worker thread
 2. Retrieves BT results and applies commands (movement, direction changes, state requests)
-3. Handles FSM state transitions via `pending_request` (Arc<Mutex>, last-win strategy)
-4. Updates position, validates movement against LogicMap, applies step height offsets
+
+`ScriptedCharacterLogic` is an user character which is controlled by an used defined script. It extends 
+`CharacterLLogic` by adding function to support scripted behavior. 
+
 
 `CharacterSnapshot` is a read-only clone sent to the worker thread for thread-safe BT evaluation.
 
