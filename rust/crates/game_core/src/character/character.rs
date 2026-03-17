@@ -1,9 +1,3 @@
-use crate::ai::worker::*;
-use crate::bt::command::BTCommand;
-use crate::bt::job::BTJob;
-use crate::bt::result::BTResult;
-use crate::bt::BTRef;
-use crate::bt::BehaviourTree;
 use crate::bt::Blackboard;
 use crate::character::request::StateRequest;
 use crate::character::snapshot::CharacterSnapshot;
@@ -18,7 +12,6 @@ use platform::Animator;
 use std::sync::{Arc, Mutex};
 
 use platform::log_debug;
-use platform::shared::logger_global::log;
 
 use crate::map::{LogicMap, StepType};
 
@@ -37,18 +30,15 @@ pub struct CharacterLogic {
 
     // pending_commands: Vec<BTCommand>,
     pub id: CharacterId,
-    pub bt: BTRef,
     pub blackboard: Box<Blackboard>,
 
     prev_cell: Vector2Di,
     pub start_cell: Vector2Di, // initial coordinates, used during level reset.
     logic_map: Arc<LogicMap>,
-    generation: u32, // incremented on reset() to invalidate stale BT results
 }
 
 impl CharacterLogic {
     pub fn new(id: CharacterId, animator: Box<dyn Animator>) -> Self {
-        log(LogType::Info, "Create struct CharacterLogic");
         Self {
             id,
             direction: Direction::SOUTH,
@@ -59,13 +49,10 @@ impl CharacterLogic {
             pending_request: Arc::new(Mutex::new(Some(StateRequest::Idle))),
             animator,
             logic_map: Arc::new(LogicMap::new(0, 0)),
-            // pending_commands: Vec::new(),
-            bt: Arc::new(BehaviourTree::default()),
             blackboard: Box::new(Blackboard::new()),
 
             prev_cell: Vector2Di::new(0, 0),
             start_cell: Vector2Di::new(0, 0),
-            generation: 0,
         }
     }
 
@@ -152,12 +139,6 @@ impl CharacterLogic {
      * Can be called from Input, Behaviour Tree, or other threads
      */
     pub fn request_state(&self, request: StateRequest) {
-        log_debug!(
-            "Character[{}]: Character::request_state: {:?}, current direction: {}",
-            self.id,
-            request,
-            self.direction
-        );
         if let Ok(mut pending) = self.pending_request.lock() {
             // "last win strategy" - if multiple systems request a state in the same frame, the last one overrides
             *pending = Some(request);
@@ -190,12 +171,6 @@ impl CharacterLogic {
         } else {
             true
         };
-
-        log_debug!(
-            "Character[{}]: check if can exit from the current state: {}",
-            self.id,
-            can_exit
-        );
 
         //1. Map request -> Target state type
         let target_type = match req {
@@ -232,19 +207,10 @@ impl CharacterLogic {
             }
             old_state.exit(self);
         }
-        log_debug!(
-            "Character[{}]: Entered to new state: {:?}",
-            self.id,
-            &new_state.get_type()
-        );
 
         let mut next_state = new_state;
         next_state.enter(self);
-        log_debug!(
-            "Character[{}]: current state {:?}",
-            self.id,
-            &next_state.get_type()
-        );
+
         self.state = Some(next_state);
 
         Ok(())
@@ -280,47 +246,6 @@ impl CharacterLogic {
             blackboard: self.blackboard.clone(),
             current_speed: self.current_speed,
             cell_position: self.get_cell_position(),
-        }
-    }
-
-    // Process the command
-    pub fn apply(&mut self, cmd: BTCommand) {
-        log_debug!("received command: {:?}", cmd);
-        use BTCommand::*;
-        match cmd {
-            ChangeState(state) => {
-                self.request_state(state);
-            }
-            SetDirection(direction) => {
-                self.direction = direction;
-            }
-            SnapToCell => {
-                self.snap_to_cell();
-            }
-
-            _ => (),
-        }
-    }
-
-    pub fn process_commands(&mut self, result: BTResult) {
-        for cmd in result.commands {
-            self.apply(cmd);
-        }
-    }
-
-    pub fn tick_ai(&mut self, delta: f32) {
-        if let Some(tx) = JOB_TX.get() {
-            let _ = tx.send(BTJob {
-                character_id: self.id,
-                snapshot: self.snapshot(),
-                bt: self.bt.clone(),
-                delta,
-                generation: self.generation,
-            });
-        }
-
-        if let Some(result) = take_result(self.id, self.generation) {
-            self.process_commands(result);
         }
     }
 
@@ -374,8 +299,6 @@ impl CharacterLogic {
             self.get_cell_position(),
         );
 
-        self.tick_ai(delta);
-
         // Process pending request
         self.handle_transitions();
 
@@ -387,25 +310,9 @@ impl CharacterLogic {
 
         let mut pos = logic_map.get_cell_position(self.get_position());
 
-        log_debug!(
-            "Character[{}]: LogicMap => cell({},{}) -move--> cell({},{}): is_walkable_from: {}",
-            self.id,
-            self.prev_cell.x,
-            self.prev_cell.y,
-            pos.x,
-            pos.y,
-            logic_map.is_walkable_from(self.prev_cell, pos)
-        );
-
         if !logic_map.is_walkable_from(self.prev_cell, pos) {
             // the character got to non walkable cell, set the position to the previous cell
             // and set Idle state
-            log_debug!(
-                "Character[{}]: got to non-walkable cell, move to the prev cell: ({}, {})",
-                self.id,
-                self.prev_cell.x,
-                self.prev_cell.y
-            );
             pos = self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
             // transfer to idle
             let _ = self.force_transition(StateRequest::Idle);
@@ -425,10 +332,6 @@ impl CharacterLogic {
 
     // Reset character to its initial state (position, FSM, BT blackboard)
     pub fn reset(&mut self) {
-        // Increment generation so any in-flight BT jobs from before this reset
-        // are considered stale and their results will be discarded.
-        self.generation = self.generation.wrapping_add(1);
-
         // Restore direction
         self.direction = self.start_direction;
 

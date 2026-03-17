@@ -8,7 +8,7 @@ use crate::godot_animator::GodotAnimator;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::{BTRef, BehaviourTree};
-use game_core::CharacterLogic;
+use game_core::NPCCharacterLogic;
 use platform::types::{Vector2D, Vector2Di};
 
 //use platform::shared::logger_global::log;
@@ -20,7 +20,7 @@ use std::sync::Arc;
 #[class(base=Area2D)]
 pub struct Character {
     base: Base<Area2D>,
-    logic: Option<CharacterLogic>,
+    logic: Option<NPCCharacterLogic>,
     logic_map: Option<Arc<LogicMap>>,
 }
 
@@ -32,14 +32,15 @@ impl Character {
         let patrol = self.get_patrol_point();
         if let Some(logic) = &mut self.logic {
             logic.set_logic_map(logic_map);
-            logic.start_cell = logic.snap_to_cell();
+            let cell = logic.snap_to_cell();
+            logic.set_start_cell(cell);
             if let Some(points) = patrol {
                 let start_x = points[0].x as i32;
                 let start_y = points[0].y as i32;
                 logic.set_cell_position(start_x, start_y);
                 // start_cell must be the first patrol point so reset() returns the
                 // character to the correct patrol start, not the editor-placed position.
-                logic.start_cell = Vector2Di::new(start_x, start_y);
+                logic.set_start_cell(Vector2Di::new(start_x, start_y));
             }
         }
     }
@@ -154,7 +155,6 @@ impl IArea2D for Character {
         let sprite = self
             .base()
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
-        let position = sprite.get_position();
         let animator = Box::new(GodotAnimator::new(sprite));
 
         //build BT tree
@@ -164,12 +164,7 @@ impl IArea2D for Character {
         let id = self.get_id();
         log_info!("Character[{}] id: {}", &name, id);
 
-        let mut logic = CharacterLogic::new(id, animator);
-
-        logic.set_position(Vector2D {
-            x: position.x,
-            y: position.y,
-        });
+        let mut logic = NPCCharacterLogic::new(id, animator);
 
         logic.bt = tree;
 

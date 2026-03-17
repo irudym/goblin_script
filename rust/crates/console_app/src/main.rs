@@ -9,8 +9,8 @@ use game_core::ai::worker::init_bt_system;
 use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
 use game_core::bt::nodes::{Selector, Sequence};
 use game_core::bt::BehaviourTree;
-use game_core::CharacterLogic;
 use game_core::CommandExecutor;
+use game_core::{NPCCharacterLogic, ScriptedCharacterLogic};
 use platform::logger::LogType;
 use platform::types::Vector2D;
 use scripting_vm::ScriptVM;
@@ -72,7 +72,7 @@ fn main() {
         Box::new(MoveToTarget::new("target_pos")),
     ]))));
 
-    let mut character = CharacterLogic::new(1, Box::new(animator));
+    let mut character = NPCCharacterLogic::new(1, Box::new(animator));
     character.bt = tree;
     //character.set_position(Vector2D { x: 81.0, y: 745.0 });
     character.set_cell_position(1, 11);
@@ -122,7 +122,7 @@ fn main() {
     };
 
     let scripted_animator = ConsoleAnimator::new();
-    let mut scripted_character = CharacterLogic::new(2, Box::new(scripted_animator));
+    let mut scripted_character = ScriptedCharacterLogic::new(2, Box::new(scripted_animator));
     scripted_character.set_logic_map(arc_logic_map.clone());
 
     let commands = match script.run_script() {

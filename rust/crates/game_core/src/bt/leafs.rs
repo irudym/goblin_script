@@ -340,22 +340,24 @@ impl BTNode for Wait {
 
     fn reset(&mut self) {}
 
-    fn tick(&self, snapshot: &CharacterSnapshot, delta: f32) -> (NodeStatus, BTResult) {
+    fn tick(&self, snapshot: &CharacterSnapshot, _delta: f32) -> (NodeStatus, BTResult) {
         let bb = &snapshot.blackboard;
-        let key = format!("{}.timer", self.id);
+        let started_key = format!("{}.timer_started", self.id);
 
-        let mut current_time = match bb.get(&key) {
-            Some(BlackboardValue::Float(val)) => val,
-            _ => 0.0,
-        };
+        let started = matches!(bb.get(&started_key), Some(BlackboardValue::Bool(true)));
 
-        current_time += delta;
-        if current_time > self.delay {
-            bb.set(&key, BlackboardValue::Float(0.0));
-            return (NodeStatus::SUCCESS, BTResult::empty());
+        if snapshot.is_idle {
+            if started {
+                // FSM state completed, character returned to Idle
+                bb.set(&started_key, BlackboardValue::Bool(false));
+                return (NodeStatus::SUCCESS, BTResult::empty());
+            } else {
+                // Kick off the FSM Wait state
+                bb.set(&started_key, BlackboardValue::Bool(true));
+                let commands = vec![BTCommand::ChangeState(StateRequest::Wait(self.delay))];
+                return (NodeStatus::RUNNING, BTResult { commands });
+            }
         }
-
-        bb.set(&key, BlackboardValue::Float(current_time));
         (NodeStatus::RUNNING, BTResult::empty())
     }
 }

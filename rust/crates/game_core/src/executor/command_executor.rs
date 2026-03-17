@@ -6,7 +6,7 @@ use crate::StateRequest;
 use crate::{
     api::commands::{ExecutionPlayerCommand, PlayerCommand},
     map::LogicMap,
-    CharacterLogic,
+    ScriptedCharacterLogic,
 };
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -33,7 +33,7 @@ impl CommandExecutor {
     pub fn tick(
         &mut self,
         _delta: f32,
-        character: &mut CharacterLogic,
+        character: &mut ScriptedCharacterLogic,
         logic_map: &Arc<LogicMap>,
     ) -> ExecutorResult {
         // Proceed to the next command only after the character executed the previous one and came
@@ -57,7 +57,7 @@ impl CommandExecutor {
 
         // get direction and compare with the current character direction
         if let Some(direction) = cmd.get_command_direction() {
-            if direction != character.direction {
+            if direction != character.get_direction() {
                 // synchronously force WalkState→Idle before the Turn request is queued,
                 // avoiding the "last-win" overwrite and ensuring the Turn can be accepted
                 // from IdleState
@@ -117,7 +117,7 @@ impl CommandExecutor {
     }
 
     // apply all commands in one shot
-    pub fn apply(commands: Vec<ExecutionPlayerCommand>, character: &mut CharacterLogic) {
+    pub fn apply(commands: Vec<ExecutionPlayerCommand>, character: &mut ScriptedCharacterLogic) {
         for cmd in commands.iter() {
             //apply cmd to the character
             log_debug!("Executor: cmd: {:?}", cmd);
@@ -227,9 +227,9 @@ mod tests {
         Arc::new(map)
     }
 
-    fn make_character(cell_x: i32, cell_y: i32, map: &Arc<LogicMap>) -> CharacterLogic {
+    fn make_character(cell_x: i32, cell_y: i32, map: &Arc<LogicMap>) -> ScriptedCharacterLogic {
         ensure_init();
-        let mut ch = CharacterLogic::new(
+        let mut ch = ScriptedCharacterLogic::new(
             (cell_x as u32) * 1000 + cell_y as u32,
             Box::new(TestAnimator::new(Vector2D::new(0.0, 0.0))),
         );
@@ -244,7 +244,7 @@ mod tests {
     /// or until the tick budget is exhausted (to prevent infinite loops in tests).
     fn run_until_idle_or_budget(
         executor: &mut CommandExecutor,
-        character: &mut CharacterLogic,
+        character: &mut ScriptedCharacterLogic,
         map: &Arc<LogicMap>,
         max_ticks: usize,
     ) {
@@ -273,7 +273,7 @@ mod tests {
         let mut character = make_character(1, 2, &map);
 
         // Start character facing NORTH so no initial turn is needed for MoveNorth
-        character.direction = Direction::NORTH;
+        character.set_direction(Direction::NORTH);
         // Put character into Idle state so the executor will start processing
         character.try_transition(StateRequest::Idle).unwrap();
 
@@ -316,7 +316,7 @@ mod tests {
     fn test_executor_reset_clears_commands() {
         let map = make_3x3_map();
         let mut character = make_character(1, 1, &map);
-        character.direction = Direction::NORTH;
+        character.set_direction(Direction::NORTH);
         character.try_transition(StateRequest::Idle).unwrap();
 
         let mut executor = CommandExecutor::new();
@@ -345,7 +345,7 @@ mod tests {
     fn test_executor_reset_clears_current_line() {
         let map = make_3x3_map();
         let mut character = make_character(1, 1, &map);
-        character.direction = Direction::NORTH;
+        character.set_direction(Direction::NORTH);
         character.try_transition(StateRequest::Idle).unwrap();
 
         let mut executor = CommandExecutor::new();
@@ -375,7 +375,7 @@ mod tests {
     fn test_executor_reset_then_run_new_commands() {
         let map = make_3x3_map();
         let mut character = make_character(1, 2, &map);
-        character.direction = Direction::NORTH;
+        character.set_direction(Direction::NORTH);
         character.try_transition(StateRequest::Idle).unwrap();
 
         let mut executor = CommandExecutor::new();
@@ -389,7 +389,7 @@ mod tests {
 
         // Reset both executor and character, then run a different command
         executor.reset();
-        character.start_cell = Vector2Di::new(1, 2);
+        character.set_start_cell(Vector2Di::new(1, 2));
         character.reset();
         assert_eq!(
             character.get_cell_position(),

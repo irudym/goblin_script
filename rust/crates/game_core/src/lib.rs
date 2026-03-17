@@ -16,7 +16,9 @@ pub mod test_utils;
  * Public re-export
  */
 pub use character::character::CharacterLogic;
+pub use character::npc_character::NPCCharacterLogic;
 pub use character::request::StateRequest;
+pub use character::scripted_character::ScriptedCharacterLogic;
 
 //FSM
 pub use fsm::StateType;

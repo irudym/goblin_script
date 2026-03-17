@@ -3,10 +3,9 @@ use game_core::map::LogicMap;
 use godot::classes::{AnimatedSprite2D, Area2D, IArea2D};
 use godot::prelude::*;
 use platform::logger::LogType;
-use platform::types::Vector2D;
 
 use crate::godot_animator::GodotAnimator;
-use game_core::CharacterLogic;
+use game_core::ScriptedCharacterLogic;
 
 use platform::{log_error, log_info};
 use std::sync::Arc;
@@ -15,7 +14,7 @@ use std::sync::Arc;
 #[class(base=Area2D)]
 pub struct ScriptedCharacter {
     base: Base<Area2D>,
-    pub logic: Option<CharacterLogic>,
+    pub logic: Option<ScriptedCharacterLogic>,
     logic_map: Option<Arc<LogicMap>>,
 }
 
@@ -25,7 +24,8 @@ impl ScriptedCharacter {
         self.logic_map = Some(logic_map.clone());
         if let Some(logic) = &mut self.logic {
             logic.set_logic_map(logic_map);
-            logic.start_cell = logic.snap_to_cell();
+            let cell = logic.snap_to_cell();
+            logic.set_start_cell(cell);
         }
     }
 
@@ -69,23 +69,17 @@ impl IArea2D for ScriptedCharacter {
         let sprite = self
             .base()
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
-        let position = sprite.get_position();
         let animator = Box::new(GodotAnimator::new(sprite));
 
         //get id from meta
         let id = self.get_id();
         log_info!("Character[{}] id: {}", &name, id);
 
-        let mut logic = CharacterLogic::new(id, animator);
+        let mut logic = ScriptedCharacterLogic::new(id, animator);
 
         if let Some(map) = &mut self.logic_map {
             logic.set_logic_map(map.clone());
         }
-
-        logic.set_position(Vector2D {
-            x: position.x,
-            y: position.y,
-        });
 
         self.logic = Some(logic);
     }

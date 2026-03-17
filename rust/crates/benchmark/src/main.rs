@@ -3,7 +3,7 @@ use game_core::bt::nodes::*;
 use game_core::bt::result::BTResult;
 use game_core::bt::*;
 use game_core::character::snapshot::CharacterSnapshot;
-use game_core::CharacterLogic;
+use game_core::NPCCharacterLogic;
 use platform::logger::{LogType, Logger};
 use platform::shared::logger_global::init_logger;
 use platform::types::{Vector2D, Vector2Di};
@@ -44,9 +44,9 @@ fn main() {
     let shared_tree = build_tree(route);
 
     // test in main thread
-    let mut characters: Vec<CharacterLogic> = (0..n_characters)
+    let mut characters: Vec<NPCCharacterLogic> = (0..n_characters)
         .map(|i| {
-            let mut char = CharacterLogic::new(i, Box::new(DummyAnimator::new()));
+            let mut char = NPCCharacterLogic::new(i, Box::new(DummyAnimator::new()));
             char.bt = shared_tree.clone();
             char
         })
@@ -55,9 +55,9 @@ fn main() {
     let mut snapshots: Vec<CharacterSnapshot> = characters
         .iter()
         .map(|c| CharacterSnapshot {
-            id: c.id,
+            id: c.get_id(),
             position: c.get_position(),
-            direction: c.direction.clone(),
+            direction: c.get_direction().clone(),
             velocity: Vector2D { x: 0.0, y: 0.0 },
             is_idle: c.is_idle(),
             blackboard: Default::default(),
@@ -87,7 +87,7 @@ fn main() {
 
             //update snapshot from characters
             snapshots[index].position = characters[index].get_position();
-            snapshots[index].direction = characters[index].direction.clone();
+            snapshots[index].direction = characters[index].get_direction().clone();
         }
 
         let dt = frame_start.elapsed().as_micros();

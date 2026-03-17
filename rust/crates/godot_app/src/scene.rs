@@ -238,6 +238,8 @@ impl INode2D for Scene {
                 if let Some(logic) = &mut char_bind.logic {
                     let result = self.executor.tick(delta, logic, logic_map);
 
+                    log_debug!("Executor result: {:?}", result);
+
                     if result != ExecutorResult::Empty {
                         let current_line = self.executor.current_line();
                         let line = current_line as i32 - 1;
@@ -259,11 +261,6 @@ impl INode2D for Scene {
                             code_editor.center_viewport_to_caret();
                         }
                         // highlight the current executing line in the editor
-                        log_debug!(
-                            "Executor: highlight line number: {}, result: {:?}",
-                            current_line,
-                            &result
-                        );
                         if let Some(code_editor) = &mut self.code_editor {
                             code_editor.set_caret_line(current_line as i32 - 1);
                             code_editor.center_viewport_to_caret();
