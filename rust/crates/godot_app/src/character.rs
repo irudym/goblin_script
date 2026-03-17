@@ -67,8 +67,6 @@ impl Character {
             vec![]
         };
 
-        log_info!("Patrol points: {:?}", route);
-
         let tile_size = if let Some(map) = &self.logic_map {
             map.get_cell_size()
         } else {

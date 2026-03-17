@@ -31,21 +31,14 @@ impl FSM for WaitState {
     fn enter(&mut self, character: &mut CharacterLogic) {
         character.play_animation_with_direction("stand");
         character.set_current_speed(0.0);
-        log_debug!("[WaitState]: enter, delay: {}", self.remaining_ms);
     }
 
     fn exit(&self, _character: &mut CharacterLogic) {}
 
     fn update(&mut self, delta: f32, character: &mut CharacterLogic) {
         self.remaining_ms -= delta;
-        log_debug!(
-            "[WaitState]: delta: {}, remained: {}",
-            delta,
-            self.remaining_ms
-        );
 
         if self.remaining_ms <= 0.0 {
-            log_debug!("[WaitState]: finished with remained: {}", self.remaining_ms);
             self.can_exit = true;
             character.request_state(StateRequest::Idle);
         }
