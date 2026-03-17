@@ -5,8 +5,9 @@ use godot::prelude::*;
 use platform::logger::LogType;
 
 use crate::godot_animator::GodotAnimator;
-use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint, Wait};
+use game_core::bt::leafs::{IsAtTarget, MoveToTarget, NextWaypoint};
 use game_core::bt::nodes::{Selector, Sequence};
+use game_core::bt::wait::Wait;
 use game_core::bt::{BTRef, BehaviourTree};
 use game_core::NPCCharacterLogic;
 use platform::types::{Vector2D, Vector2Di};
@@ -77,7 +78,7 @@ impl Character {
         Arc::new(BehaviourTree::new(Box::new(Selector::new(vec![
             Box::new(Sequence::new(vec![
                 Box::new(NextWaypoint::new(route, "target_pos", tile_size)),
-                Box::new(Wait::new(0.64)),
+                Box::new(Wait::new(2.0)),
                 Box::new(IsAtTarget::new("target_pos")),
             ])),
             Box::new(MoveToTarget::new("target_pos")),

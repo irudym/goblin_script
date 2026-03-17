@@ -8,6 +8,7 @@ pub mod leafs;
 pub mod nodes;
 pub mod result;
 pub mod tree;
+pub mod wait;
 
 pub use blackboard::Blackboard;
 

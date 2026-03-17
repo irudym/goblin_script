@@ -2,8 +2,8 @@ use super::BoxBTNode;
 use std::sync::Arc;
 
 use super::result::BTResult;
-use crate::bt::leafs::Wait;
 use crate::bt::nodes::Sequence;
+use crate::bt::wait::Wait;
 use crate::character::snapshot::CharacterSnapshot;
 
 pub struct BehaviourTree {
