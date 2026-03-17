@@ -1,6 +1,3 @@
-use platform::log_debug;
-use platform::logger::LogType;
-
 use super::{StateType, FSM};
 use crate::character::request::StateRequest;
 use crate::CharacterLogic;

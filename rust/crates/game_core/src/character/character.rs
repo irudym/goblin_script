@@ -187,13 +187,7 @@ impl CharacterLogic {
             return Err("Cannot exit from the current state".to_string());
         }
 
-        let new_state: Box<dyn FSM> = match req {
-            StateRequest::Idle => Box::new(IdleState::new()),
-            StateRequest::Run => Box::new(RunState::new()),
-            StateRequest::Turn(direction) => Box::new(TurnState::new(direction)),
-            StateRequest::WalkTo(target) => Box::new(WalkState::new(target)),
-            StateRequest::Wait(time) => Box::new(WaitState::new(time)),
-        };
+        let new_state: Box<dyn FSM> = CharacterLogic::get_state_by_request(&req);
 
         // perform the swap
         if let Some(old_state) = self.state.take() {
@@ -216,16 +210,20 @@ impl CharacterLogic {
         Ok(())
     }
 
+    fn get_state_by_request(req: &StateRequest) -> Box<dyn FSM> {
+        match req {
+            StateRequest::Idle => Box::new(IdleState::new()),
+            StateRequest::Run => Box::new(RunState::new()),
+            StateRequest::Turn(direction) => Box::new(TurnState::new(*direction)),
+            StateRequest::WalkTo(target) => Box::new(WalkState::new(*target)),
+            StateRequest::Wait(time) => Box::new(WaitState::new(*time)),
+        }
+    }
+
     // Set the state without validations
     // Can be used to switch character to Idle state
     pub fn force_transition(&mut self, req: StateRequest) {
-        let mut new_state: Box<dyn FSM> = match req {
-            StateRequest::Idle => Box::new(IdleState::new()),
-            StateRequest::Run => Box::new(RunState::new()),
-            StateRequest::Turn(direction) => Box::new(TurnState::new(direction)),
-            StateRequest::WalkTo(target) => Box::new(WalkState::new(target)),
-            StateRequest::Wait(time) => Box::new(WaitState::new(time)),
-        };
+        let mut new_state: Box<dyn FSM> = CharacterLogic::get_state_by_request(&req);
 
         // perform the swap
         if let Some(old_state) = self.state.take() {

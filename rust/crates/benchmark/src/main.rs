@@ -1,6 +1,7 @@
 use game_core::bt::leafs::*;
 use game_core::bt::nodes::*;
 use game_core::bt::result::BTResult;
+use game_core::bt::wait::Wait;
 use game_core::bt::*;
 use game_core::character::snapshot::CharacterSnapshot;
 use game_core::NPCCharacterLogic;
