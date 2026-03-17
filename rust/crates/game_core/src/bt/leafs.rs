@@ -319,13 +319,13 @@ impl BTNode for WalkToTarget {
 }
 
 pub struct Wait {
-    delay: f32,
+    delay_ms: f32,
     id: usize,
 }
 
 impl Wait {
-    pub fn new(delay: f32) -> Self {
-        Self { delay, id: 0 }
+    pub fn new(delay_ms: f32) -> Self {
+        Self { delay_ms, id: 0 }
     }
 }
 
@@ -354,7 +354,7 @@ impl BTNode for Wait {
             } else {
                 // Kick off the FSM Wait state
                 bb.set(&started_key, BlackboardValue::Bool(true));
-                let commands = vec![BTCommand::ChangeState(StateRequest::Wait(self.delay))];
+                let commands = vec![BTCommand::ChangeState(StateRequest::Wait(self.delay_ms))];
                 return (NodeStatus::RUNNING, BTResult { commands });
             }
         }
