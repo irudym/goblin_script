@@ -6,7 +6,7 @@ mod grid_overlay;
 mod scene;
 mod scripted_character;
 
-use game_core::ai::worker::init_bt_system;
+use game_core::ai::worker::{init_bt_system, shutdown_bt_system};
 use godot::classes::{ITileMapLayer, TileMapLayer};
 use godot::prelude::*;
 
@@ -54,6 +54,14 @@ unsafe impl ExtensionLibrary for GoblinExtension {
                 log_info!("AI System is ready!");
             }
             _ => (),
+        }
+    }
+
+    fn on_level_deinit(level: InitLevel) {
+        if level == InitLevel::Scene {
+            godot_print!("Shutting down BT worker thread...");
+            shutdown_bt_system();
+            godot_print!("BT worker thread stopped.");
         }
     }
 }

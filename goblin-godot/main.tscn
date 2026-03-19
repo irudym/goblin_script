@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://motdoy57ggut" path="res://assets/sprites/tiny/goblin.png" id="10_vivmo"]
 [ext_resource type="Texture2D" uid="uid://c34syfah1ifrj" path="res://assets/sprites/tiny/Sheep/Sheep_Idle.png" id="12_ycdy4"]
 [ext_resource type="Texture2D" uid="uid://duqaygpss475m" path="res://assets/sprites/tiny/Sheep/Sheep_Grass.png" id="13_w48qg"]
+[ext_resource type="Texture2D" uid="uid://dd4rlbflg7t0x" path="res://assets/UI/tiny/UI/Papers/SpecialPaper_9patch.png" id="16_074og"]
 [ext_resource type="Texture2D" uid="uid://drd2nh5wxb2n1" path="res://assets/UI/tiny/UI/Buttons/Button_Blue.png" id="16_yaehf"]
 [ext_resource type="Texture2D" uid="uid://c12e210vd1dll" path="res://assets/UI/tiny/UI/Buttons/Button_Blue_Pressed.png" id="17_074og"]
 
@@ -1222,6 +1223,17 @@ offset = Vector2(0, -32)
 
 [node name="DebugOverlay" type="DebugOverlay" parent="." unique_id=1233311444]
 
+[node name="NinePatchRect" type="NinePatchRect" parent="." unique_id=1054837722]
+offset_left = 608.0
+offset_top = 771.0
+offset_right = 1200.0
+offset_bottom = 1004.0
+texture = ExtResource("16_074og")
+patch_margin_left = 54
+patch_margin_top = 54
+patch_margin_right = 54
+patch_margin_bottom = 54
+
 [node name="RunButton" type="TextureButton" parent="." unique_id=1990251188]
 offset_left = 1.0
 offset_top = 710.0
@@ -1232,10 +1244,10 @@ texture_pressed = ExtResource("17_074og")
 
 [node name="LogBox" type="RichTextLabel" parent="." unique_id=160467028]
 z_index = 7
-offset_left = 622.0
-offset_top = 776.0
-offset_right = 1188.0
-offset_bottom = 990.0
+offset_left = 629.0
+offset_top = 790.0
+offset_right = 1179.0
+offset_bottom = 983.0
 text = "Log"
 
 [connection signal="pressed" from="RunButton" to="." method="on_run_pressed"]

@@ -4,7 +4,7 @@ use crossbeam::channel::{unbounded, Receiver, Sender};
 use rayon::ThreadPoolBuilder;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 use super::super::bt::job::BTJob;
 use num_cpus;
@@ -14,6 +14,8 @@ use platform::logger::LogType;
 
 pub static JOB_TX: OnceLock<Sender<BTJob>> = OnceLock::new();
 static RESULT_MAP: OnceLock<Mutex<HashMap<CharacterId, (u32, BTResult)>>> = OnceLock::new();
+static SHUTDOWN_TX: OnceLock<Sender<()>> = OnceLock::new();
+static WORKER_HANDLE: OnceLock<Mutex<Option<JoinHandle<()>>>> = OnceLock::new();
 
 pub fn init_bt_system() {
     let pool = ThreadPoolBuilder::new()
@@ -24,11 +26,17 @@ pub fn init_bt_system() {
     log_debug!("Thread pool created: {:?}", &pool);
 
     let (tx, rx) = unbounded::<BTJob>();
-    JOB_TX
-        .set(tx)
-        .expect("init_bt_system called more than once");
+    let (shutdown_tx, shutdown_rx) = unbounded::<()>();
+
+    JOB_TX.set(tx).expect("init_bt_system called more than once");
     RESULT_MAP
         .set(Mutex::new(HashMap::new()))
+        .expect("init_bt_system called more than once");
+    SHUTDOWN_TX
+        .set(shutdown_tx)
+        .expect("init_bt_system called more than once");
+    WORKER_HANDLE
+        .set(Mutex::new(None))
         .expect("init_bt_system called more than once");
 
     std::panic::set_hook(Box::new(|panic_info| {
@@ -36,9 +44,26 @@ pub fn init_bt_system() {
         eprintln!("PANIC in worker thread: {:?}", panic_info);
     }));
 
-    let handle = thread::spawn(move || worker_loop(rx, pool));
-
+    let handle = thread::spawn(move || worker_loop(rx, shutdown_rx, pool));
     log_debug!("Separated thread created: {:?}", &handle);
+
+    if let Some(slot) = WORKER_HANDLE.get() {
+        *slot.lock().unwrap() = Some(handle);
+    }
+}
+
+pub fn shutdown_bt_system() {
+    // Signal the worker to stop.
+    if let Some(tx) = SHUTDOWN_TX.get() {
+        let _ = tx.send(());
+    }
+    // Join the worker thread so it fully stops before the extension is unloaded.
+    if let Some(slot) = WORKER_HANDLE.get() {
+        if let Some(handle) = slot.lock().unwrap().take() {
+            let _ = handle.join();
+        }
+    }
+    log_debug!("BT system shut down");
 }
 
 /// Returns the BT result only if it matches `expected_generation`.
@@ -53,42 +78,48 @@ pub fn take_result(character_id: CharacterId, expected_generation: u32) -> Optio
     None
 }
 
-fn worker_loop(rx: Receiver<BTJob>, pool: rayon::ThreadPool) {
+fn worker_loop(rx: Receiver<BTJob>, shutdown_rx: Receiver<()>, pool: rayon::ThreadPool) {
     loop {
-        // block until the first job arrives (no CPU spin)
-        let first = match rx.recv() {
-            Ok(job) => job,
-            Err(_) => break, // channel closed, exit worker loop
-        };
-        let mut jobs = vec![first];
+        // Block until the first job arrives or a shutdown signal is received.
+        crossbeam::select! {
+            recv(shutdown_rx) -> _ => break,
+            recv(rx) -> msg => {
+                let first = match msg {
+                    Ok(job) => job,
+                    Err(_) => break, // job channel closed
+                };
+                let mut jobs = vec![first];
 
-        // drain any additional queued jobs up to batch limit
-        while jobs.len() < 32 {
-            match rx.try_recv() {
-                Ok(job) => jobs.push(job),
-                Err(_) => break,
-            }
-        }
+                // Drain any additional queued jobs up to batch limit.
+                while jobs.len() < 32 {
+                    match rx.try_recv() {
+                        Ok(job) => jobs.push(job),
+                        Err(_) => break,
+                    }
+                }
 
-        // run all jobs in parallel, collect results locally
-        let batch_results: Mutex<Vec<(CharacterId, u32, BTResult)>> = Mutex::new(Vec::new());
-        pool.scope(|scope| {
-            for job in jobs.drain(..) {
-                let batch_results = &batch_results;
-                scope.spawn(move |_| {
-                    let result = job.bt.tick(&job.snapshot, job.delta);
-                    batch_results
-                        .lock()
-                        .unwrap()
-                        .push((job.character_id, job.generation, result));
+                // Run all jobs in parallel, collect results locally.
+                let batch_results: Mutex<Vec<(CharacterId, u32, BTResult)>> =
+                    Mutex::new(Vec::new());
+                pool.scope(|scope| {
+                    for job in jobs.drain(..) {
+                        let batch_results = &batch_results;
+                        scope.spawn(move |_| {
+                            let result = job.bt.tick(&job.snapshot, job.delta);
+                            batch_results
+                                .lock()
+                                .unwrap()
+                                .push((job.character_id, job.generation, result));
+                        });
+                    }
                 });
-            }
-        });
 
-        // single bulk insert into the global result map
-        let mut map = RESULT_MAP.get().unwrap().lock().unwrap();
-        for (id, gen, result) in batch_results.into_inner().unwrap() {
-            map.insert(id, (gen, result));
+                // Single bulk insert into the global result map.
+                let mut map = RESULT_MAP.get().unwrap().lock().unwrap();
+                for (id, gen, result) in batch_results.into_inner().unwrap() {
+                    map.insert(id, (gen, result));
+                }
+            }
         }
     }
 }
