@@ -5,6 +5,7 @@ use platform::types::Vector2D;
 
 pub struct WalkState {
     target: Vector2D,
+    initial_dir: Vector2D, // normalized direction from start to target; set in enter()
     can_exit: bool,
 }
 
@@ -12,6 +13,7 @@ impl WalkState {
     pub fn new(target: Vector2D) -> Self {
         Self {
             target,
+            initial_dir: Vector2D::new(0.0, 0.0),
             can_exit: false,
         }
     }
@@ -27,20 +29,33 @@ impl FSM for WalkState {
     }
 
     fn enter(&mut self, character: &mut CharacterLogic) {
-        character.set_current_speed(0.0); // to disable velocity update in process(), will update character position in update
-        character.play_animation_with_direction("run");
+        let diff = self.target - character.get_position();
+        let len = diff.length();
+        if len > f32::EPSILON {
+            self.initial_dir = diff * (1.0 / len);
+            character.set_current_speed(character.speed); // enables get_effective_velocity in process()
+            character.play_animation_with_direction("run");
+        } else {
+            // Already at target — exit immediately next update
+            self.can_exit = true;
+            character.request_state(StateRequest::Idle);
+        }
     }
 
     fn exit(&self, _character: &mut CharacterLogic) {}
 
-    fn update(&mut self, delta: f32, character: &mut CharacterLogic) {
-        let current_pos = character.get_position();
+    fn update(&mut self, _delta: f32, character: &mut CharacterLogic) {
+        // process() has already moved the character this frame via get_effective_velocity().
+        // Check if we have reached or passed the target depth along the movement direction.
+        let to_target = self.target - character.get_position();
+        let dot = to_target.x * self.initial_dir.x + to_target.y * self.initial_dir.y;
 
-        //use move toward method
-        let new_pos = current_pos.move_toward(self.target, character.speed * delta);
-        character.set_position(new_pos); // manually update the position
-
-        if new_pos.approx_eq(&self.target) {
+        if dot <= 0.0 {
+            // Snap only along initial_dir; the perpendicular component (stair Y-drift) is preserved.
+            // Formula: current_pos + initial_dir * dot  →  moves backward by |dot| along movement axis.
+            let snapped = character.get_position() + self.initial_dir * dot;
+            character.set_position(snapped);
+            character.set_current_speed(0.0);
             self.can_exit = true;
             character.request_state(StateRequest::Idle);
         }
