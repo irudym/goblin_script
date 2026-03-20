@@ -72,16 +72,20 @@ impl CommandExecutor {
         match cmd {
             PlayerCommand::MoveNorth => {
                 // get character cell coordinates
-                cell_position.y -= 1;
+                // cell_position.y -= 1;
+                cell_position = character.try_step(&platform::types::Direction::NORTH)
             }
             PlayerCommand::MoveEast => {
-                cell_position.x += 1;
+                // cell_position.x += 1;
+                cell_position = character.try_step(&platform::types::Direction::EAST)
             }
             PlayerCommand::MoveWest => {
-                cell_position.x -= 1;
+                // cell_position.x -= 1;
+                cell_position = character.try_step(&platform::types::Direction::WEST)
             }
             PlayerCommand::MoveSouth => {
-                cell_position.y += 1;
+                // cell_position.y += 1;
+                cell_position = character.try_step(&platform::types::Direction::SOUTH)
             }
             PlayerCommand::SetPosition(position) => {
                 character.set_cell_position(position.x, position.y);
@@ -93,6 +97,7 @@ impl CommandExecutor {
             }
             _ => todo!(),
         };
+
         // Request WalkTo state in case the cell_position changed
         if character.get_cell_position() != cell_position {
             let position = logic_map.get_screen_position(cell_position);
