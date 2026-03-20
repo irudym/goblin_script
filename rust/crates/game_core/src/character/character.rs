@@ -34,7 +34,7 @@ pub struct CharacterLogic {
 
     prev_cell: Vector2Di,
     pub start_cell: Vector2Di, // initial coordinates, used during level reset.
-    logic_map: Arc<LogicMap>,
+    pub logic_map: Arc<LogicMap>,
 }
 
 impl CharacterLogic {
@@ -247,6 +247,19 @@ impl CharacterLogic {
         }
     }
 
+    // return offset vector
+    pub fn get_steps_offset_vector(step_type: StepType, direction: &Direction) -> Option<Vector2D> {
+        match (step_type, direction) {
+            (StepType::Left, Direction::EAST) => Some(Vector2D::new(1.0, -1.0)),
+            (StepType::Left, Direction::WEST) => Some(Vector2D::new(-1.0, 1.0)),
+            // Right steps: "\" slope — falls eastward
+            (StepType::Right, Direction::EAST) => Some(Vector2D::new(1.0, 1.0)),
+            (StepType::Right, Direction::WEST) => Some(Vector2D::new(-1.0, -1.0)),
+            // No step or NORTH/SOUTH on steps: normal movement
+            _ => None,
+        }
+    }
+
     fn get_effective_velocity(&self, logic_map: &LogicMap) -> Vector2D {
         let base = self.direction.to_vector() * self.current_speed;
 
@@ -261,23 +274,12 @@ impl CharacterLogic {
         // On step tiles: east/west movement becomes diagonal
         // Using (speed, -speed) preserves horizontal speed and matches
         // the original offset formula where ΔY = ΔX
-        match (step_type, &self.direction) {
-            // Left steps: "/" slope — rises eastward
-            (StepType::Left, Direction::EAST) => {
-                Vector2D::new(self.current_speed, -self.current_speed)
-            }
-            (StepType::Left, Direction::WEST) => {
-                Vector2D::new(-self.current_speed, self.current_speed)
-            }
-            // Right steps: "\" slope — falls eastward
-            (StepType::Right, Direction::EAST) => {
-                Vector2D::new(self.current_speed, self.current_speed)
-            }
-            (StepType::Right, Direction::WEST) => {
-                Vector2D::new(-self.current_speed, -self.current_speed)
-            }
-            // No step or NORTH/SOUTH on steps: normal movement
-            _ => base,
+        if let Some(offset_vector) =
+            CharacterLogic::get_steps_offset_vector(step_type, &self.direction)
+        {
+            offset_vector * self.current_speed
+        } else {
+            base
         }
     }
 

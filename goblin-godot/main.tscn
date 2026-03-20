@@ -1232,7 +1232,7 @@ y_sort_enabled = true
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="SortingNode2D/ScriptedGoblin" unique_id=1584430653]
 y_sort_enabled = true
-position = Vector2(284, 300)
+position = Vector2(281, 674)
 sprite_frames = SubResource("SpriteFrames_wu3dr")
 animation = &"run_west"
 frame = 4

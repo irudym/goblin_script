@@ -1,5 +1,7 @@
 use std::ops::{Add, Mul, MulAssign, Sub};
 
+use crate::types::Vector2D;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector2Di {
     pub x: i32,
@@ -71,6 +73,18 @@ impl Add for Vector2Di {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Add<Vector2D> for Vector2Di {
+    type Output = Vector2Di;
+
+    #[inline]
+    fn add(self, rhs: Vector2D) -> Self {
+        Vector2Di {
+            x: self.x + rhs.x as i32,
+            y: self.y + rhs.y as i32,
         }
     }
 }
