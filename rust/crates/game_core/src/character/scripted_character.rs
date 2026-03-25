@@ -136,10 +136,10 @@ impl ScriptedCharacterLogic {
     /// * `direction`- The direction in which the character attempts to move.
     ///
     /// # Returns
-    /// A [`Vector2Di`] representing the resolved cell position after the step:
+    /// A [`Option(Vector2Di)`] representing the resolved cell position after the step:
     /// - The position at the end of (or beginning) the stairs, if stairs were encountered.
     /// - The adjacent cell position, if the move succeeded without stairs.
-    /// - The **current** cell position, if the move was blocked.
+    /// - **None**, if the move was blocked.
     ///
     /// # Example
     /// ```ignore
@@ -148,7 +148,7 @@ impl ScriptedCharacterLogic {
     ///     println!("Move was blocked");
     /// }
     /// ```
-    pub fn try_step(&self, direction: &Direction) -> Vector2Di {
+    pub fn try_step(&self, direction: &Direction) -> Option<Vector2Di> {
         let current_position = self.get_cell_position();
         let next_cell = current_position + direction.to_vector();
 
@@ -158,9 +158,9 @@ impl ScriptedCharacterLogic {
             .logic_map
             .is_walkable_from(self.get_cell_position(), next_cell)
         {
-            self.check_stairs(next_cell, direction)
+            Some(self.check_stairs(next_cell, direction))
         } else {
-            current_position
+            None
         }
     }
 }
@@ -266,7 +266,7 @@ mod tests {
         let ch = make_character(3, 0, &map);
 
         let target = ch.try_step(&Direction::WEST);
-        assert_eq!(target, Vector2Di::new(1, 1));
+        assert_eq!(target, Some(Vector2Di::new(1, 1)));
     }
 
     #[test]
@@ -275,6 +275,6 @@ mod tests {
         let ch = make_character(1, 1, &map);
 
         let target = ch.try_step(&Direction::EAST);
-        assert_eq!(target, Vector2Di::new(3, 0));
+        assert_eq!(target, Some(Vector2Di::new(3, 0)));
     }
 }

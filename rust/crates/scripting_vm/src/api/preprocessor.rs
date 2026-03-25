@@ -6,6 +6,7 @@ const COMMAND_FUNCTIONS: &[&str] = &[
     "step_left",
     "set_position",
     "wait",
+    "for",
 ];
 
 /// Instruments JavaScript source code by inserting `__line(N);` calls

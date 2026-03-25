@@ -1,5 +1,6 @@
 use platform::log_debug;
 use platform::logger::LogType;
+use platform::types::Vector2Di;
 
 use crate::executor::ExecutorResult;
 use crate::StateRequest;
@@ -73,19 +74,31 @@ impl CommandExecutor {
             PlayerCommand::MoveNorth => {
                 // get character cell coordinates
                 // cell_position.y -= 1;
-                cell_position = character.try_step(&platform::types::Direction::NORTH)
+                cell_position = match character.try_step(&platform::types::Direction::NORTH) {
+                    Some(position) => position,
+                    None => Vector2Di::new(cell_position.x, cell_position.y - 1),
+                };
             }
             PlayerCommand::MoveEast => {
                 // cell_position.x += 1;
-                cell_position = character.try_step(&platform::types::Direction::EAST)
+                cell_position = match character.try_step(&platform::types::Direction::EAST) {
+                    Some(position) => position,
+                    None => Vector2Di::new(cell_position.x + 1, cell_position.y),
+                };
             }
             PlayerCommand::MoveWest => {
                 // cell_position.x -= 1;
-                cell_position = character.try_step(&platform::types::Direction::WEST)
+                cell_position = match character.try_step(&platform::types::Direction::WEST) {
+                    Some(position) => position,
+                    None => Vector2Di::new(cell_position.x - 1, cell_position.y),
+                };
             }
             PlayerCommand::MoveSouth => {
                 // cell_position.y += 1;
-                cell_position = character.try_step(&platform::types::Direction::SOUTH)
+                cell_position = match character.try_step(&platform::types::Direction::SOUTH) {
+                    Some(position) => position,
+                    None => Vector2Di::new(cell_position.x, cell_position.y + 1),
+                };
             }
             PlayerCommand::SetPosition(position) => {
                 character.set_cell_position(position.x, position.y);
