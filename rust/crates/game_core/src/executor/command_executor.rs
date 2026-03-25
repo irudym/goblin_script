@@ -1,6 +1,6 @@
 use platform::log_debug;
 use platform::logger::LogType;
-use platform::types::Vector2Di;
+use platform::types::{Direction, Vector2Di};
 
 use crate::executor::ExecutorResult;
 use crate::StateRequest;
@@ -31,6 +31,16 @@ impl CommandExecutor {
         self.current.map_or(0, |cmd| cmd.line)
     }
 
+    /// Resolves the target cell for a movement step.
+    /// Uses try_step for the staircase traversal.
+    /// Falls back to the naive adjacent cell, to bounce back in case of non-walkable cell
+    fn resolve_target_cell(character: &ScriptedCharacterLogic, direction: &Direction) -> Vector2Di {
+        let current = character.get_cell_position();
+        character
+            .try_step(direction)
+            .unwrap_or_else(|| current + direction.to_vector())
+    }
+
     pub fn tick(
         &mut self,
         _delta: f32,
@@ -56,7 +66,7 @@ impl CommandExecutor {
             self.commands
         );
 
-        // get direction and compare with the current character direction
+        // Part 1: directional command (MoveNorth/South/East/West, Move(direction))
         if let Some(direction) = cmd.get_command_direction() {
             if direction != character.get_direction() {
                 // synchronously force WalkState→Idle before the Turn request is queued,
@@ -67,39 +77,20 @@ impl CommandExecutor {
                 self.current = Some(*exec_cmd);
                 return ExecutorResult::Turn;
             }
+            // Already facing the right direction - walk
+            let target = CommandExecutor::resolve_target_cell(character, &direction);
+            let screen_pos = logic_map.get_screen_position(target);
+            if character
+                .try_transition(StateRequest::WalkTo(screen_pos))
+                .is_ok()
+            {
+                self.current = self.commands.pop_front();
+            }
+            return ExecutorResult::Running;
         }
 
-        let mut cell_position = character.get_cell_position();
+        // Part 2: non-directional commands
         match cmd {
-            PlayerCommand::MoveNorth => {
-                // get character cell coordinates
-                // cell_position.y -= 1;
-                cell_position = match character.try_step(&platform::types::Direction::NORTH) {
-                    Some(position) => position,
-                    None => Vector2Di::new(cell_position.x, cell_position.y - 1),
-                };
-            }
-            PlayerCommand::MoveEast => {
-                // cell_position.x += 1;
-                cell_position = match character.try_step(&platform::types::Direction::EAST) {
-                    Some(position) => position,
-                    None => Vector2Di::new(cell_position.x + 1, cell_position.y),
-                };
-            }
-            PlayerCommand::MoveWest => {
-                // cell_position.x -= 1;
-                cell_position = match character.try_step(&platform::types::Direction::WEST) {
-                    Some(position) => position,
-                    None => Vector2Di::new(cell_position.x - 1, cell_position.y),
-                };
-            }
-            PlayerCommand::MoveSouth => {
-                // cell_position.y += 1;
-                cell_position = match character.try_step(&platform::types::Direction::SOUTH) {
-                    Some(position) => position,
-                    None => Vector2Di::new(cell_position.x, cell_position.y + 1),
-                };
-            }
             PlayerCommand::SetPosition(position) => {
                 character.set_cell_position(position.x, position.y);
                 self.current = self.commands.pop_front();
@@ -108,16 +99,11 @@ impl CommandExecutor {
                 let _ = character.try_transition(StateRequest::Wait(*time));
                 self.current = self.commands.pop_front();
             }
-            _ => todo!(),
-        };
-
-        // Request WalkTo state in case the cell_position changed
-        if character.get_cell_position() != cell_position {
-            let position = logic_map.get_screen_position(cell_position);
-            if let Ok(_) = character.try_transition(StateRequest::WalkTo(position)) {
-                self.current = self.commands.pop_front();
-            }
+            PlayerCommand::Pick => todo!(),
+            PlayerCommand::Open => todo!(),
+            _ => unreachable!("Directional command reached non_directional match!"),
         }
+
         ExecutorResult::Running
     }
 

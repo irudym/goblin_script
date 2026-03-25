@@ -238,7 +238,7 @@ impl CharacterLogic {
         CharacterSnapshot {
             id: self.id,
             position: self.animator.get_position(),
-            direction: self.direction.clone(),
+            direction: self.direction,
             velocity: self.current_speed * self.direction.to_vector(),
             is_idle: self.is_idle(),
             blackboard: self.blackboard.clone(),
@@ -284,11 +284,7 @@ impl CharacterLogic {
     }
 
     pub fn process(&mut self, delta: f32, logic_map: &Arc<LogicMap>) {
-        let state_type = if let Some(state) = &self.state {
-            Some(state.get_type())
-        } else {
-            None
-        };
+        let state_type = self.state.as_ref().map(|state| state.get_type());
 
         log_debug!(
             "Character[{}]::process\nDirection: {}\ncurrent_state: {:?}\ncurrent_pos: {:?}\ncurrent_cell: {:?}",
@@ -315,7 +311,7 @@ impl CharacterLogic {
             // and set Idle state
             pos = self.set_cell_position(self.prev_cell.x, self.prev_cell.y);
             // transfer to idle
-            let _ = self.force_transition(StateRequest::Idle);
+            self.force_transition(StateRequest::Idle);
         }
 
         // Update the current state
@@ -342,7 +338,7 @@ impl CharacterLogic {
         self.force_transition(StateRequest::Idle);
 
         // Clear BT execution state (Blackboard stores sequence/selector indices)
-        self.blackboard = Box::new(Blackboard::new());
+        *self.blackboard = Blackboard::new();
 
         // Clear any state request
         if let Ok(mut pending) = self.pending_request.lock() {

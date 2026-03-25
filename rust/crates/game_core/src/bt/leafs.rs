@@ -48,7 +48,7 @@ impl BTNode for FindTarget {
             return (NodeStatus::SUCCESS, BTResult::empty());
         }
 
-        return (NodeStatus::FAILURE, BTResult::empty());
+        (NodeStatus::FAILURE, BTResult::empty())
     }
 }
 
@@ -108,12 +108,10 @@ impl BTNode for MoveToTarget {
             } else {
                 Direction::WEST
             }
+        } else if direction_vector.y > 0.0 {
+            Direction::SOUTH
         } else {
-            if direction_vector.y > 0.0 {
-                Direction::SOUTH
-            } else {
-                Direction::NORTH
-            }
+            Direction::NORTH
         };
 
         //3. update FSM state
@@ -125,7 +123,7 @@ impl BTNode for MoveToTarget {
             commands.push(BTCommand::ChangeState(StateRequest::Run));
         }
 
-        return (NodeStatus::RUNNING, BTResult { commands });
+        (NodeStatus::RUNNING, BTResult { commands })
     }
 }
 

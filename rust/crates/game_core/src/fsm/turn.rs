@@ -36,7 +36,7 @@ impl FSM for TurnState {
             //start play turn animation to provided direction
             let animation = format!("turn_{}_{}", character.direction, self.target);
             character.play_animation(&animation);
-            character.direction = self.target.clone();
+            character.direction = self.target;
         }
     }
 
@@ -51,6 +51,6 @@ impl FSM for TurnState {
     }
 
     fn can_exit(&self) -> bool {
-        return self.can_exit;
+        self.can_exit
     }
 }

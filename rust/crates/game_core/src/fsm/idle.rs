@@ -32,6 +32,6 @@ impl FSM for IdleState {
     fn update(&mut self, _delta: f32, _character: &mut CharacterLogic) {}
 
     fn can_exit(&self) -> bool {
-        return true;
+        true
     }
 }

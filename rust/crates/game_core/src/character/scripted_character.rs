@@ -92,7 +92,7 @@ impl ScriptedCharacterLogic {
     ///
     /// * `cell`      - The cell to inspect for stairs.
     /// * `direction` - The direction of travel, used to determine whether the
-    ///                 staircase can be entered and to select the correct offset.
+    ///   staircase can be entered and to select the correct offset.
     ///
     /// # Returns
     ///
@@ -130,7 +130,7 @@ impl ScriptedCharacterLogic {
     /// Resolves the resulting position accounting the following rules:
     /// - If the target cell is **not walkable**, the character stays in place and the current position is returned
     /// - If the target cell contains **stairs**, the character traverses the entire staircase in a single step, and
-    /// the position of the cell next to the beginning (or the nd of) stairs is returned
+    ///   the position of the cell next to the beginning (or the nd of) stairs is returned
     ///
     /// # Arguments
     /// * `direction`- The direction in which the character attempts to move.

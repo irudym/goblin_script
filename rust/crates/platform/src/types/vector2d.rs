@@ -44,12 +44,10 @@ impl Vector2D {
             } else {
                 Direction::WEST
             }
+        } else if direction_vector.y > 0.0 {
+            Direction::SOUTH
         } else {
-            if direction_vector.y > 0.0 {
-                Direction::SOUTH
-            } else {
-                Direction::NORTH
-            }
+            Direction::NORTH
         }
     }
 
