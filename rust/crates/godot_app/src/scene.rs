@@ -94,6 +94,7 @@ impl Scene {
 
     fn run_script(&mut self, code: String) {
         log_debug!("Run script: {}", &code);
+        self.clear_highlights();
 
         if let Some(vm) = &mut self.script_vm {
             vm.set_code(&code);
@@ -107,7 +108,23 @@ impl Scene {
                     if let Some(log_box) = &mut self.log_box {
                         log_box.set_text(&e.message);
                     }
+                    self.highlight_errors(e.line - 1);
                 }
+            }
+        }
+    }
+
+    fn highlight_errors(&mut self, line: i32) {
+        if let Some(code_editor) = &mut self.code_editor {
+            code_editor.set_line_background_color(line, Color::from_rgba(0.8, 0.2, 0.0, 0.4));
+        }
+    }
+
+    fn clear_highlights(&mut self) {
+        if let Some(code_editor) = &mut self.code_editor {
+            let lines = code_editor.get_line_count();
+            for i in 0..lines {
+                code_editor.set_line_background_color(i, Color::from_rgba(0.0, 0.0, 0.0, 0.0));
             }
         }
     }
